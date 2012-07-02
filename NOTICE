@@ -1,0 +1,18 @@
+Command Line JMX Client
+Copyright 2012 Michael Pilquist
+Licensed under BSD 3-clause license (see LICENSE)
+
+The Scala library is distributed with the application.
+Copyright 2002-2012 EPFL, Lausanne
+Licensed under BSD-style license (see licenses/LICENSE_Scala)
+
+Portions of the Simple Build Tool are distributed with the application.
+Copyright 2008, 2009, 2010 Steven Blundy, Josh Cough, Mark Harrah, Stuart Roebuck, Tony Sloane, Vesa Vilhonen, Jason Zaugg
+Licensed under BSD-style license (see licenses/LICENSE_SBT)
+
+Portions of Scalaz are distributed with the application.
+Licensed under BSD-style license (see licenses/LICENSE_Scalaz)
+
+JLine is distributed with the application.
+Licensed under BSD-style license (see licenses/LICENSE_JLine)
+
