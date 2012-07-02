@@ -1,8 +1,6 @@
 package cjmx.cli
 
-import scala.annotation.tailrec
 
-import sbt._
 import sbt.complete.Parser
 import sbt.complete.DefaultParsers._
 
@@ -40,22 +38,10 @@ object ObjectNameParser {
       Property(svr, ObjectNameBuilder(domain)) flatMap recurse
     }
 
-  private def repFlatMap[A, B](init: A)(p: A => Parser[(A, B)]): Parser[Seq[B]] = {
-    def repFlatMapR[A, B](last: A, acc: Seq[B])(p: A => Parser[(A, B)]): Parser[Seq[B]] = {
-      p(last).?.flatMap { more => more match {
-        case Some((s, b)) => repFlatMapR(s, b +: acc)(p)
-        case None => Parser.success(acc.reverse)
-      } }
-    }
-    repFlatMapR[A, B](init, Seq.empty)(p)
-  }
-
-
-
   private val Property =
     (svr: MBeanServerConnection, soFar: ObjectNameBuilder) =>
       (token("*") ^^^ soFar.addPropertyWildcardChar) |
-      PropertyKeyValue(svr, soFar) // TODO support quoting/escaping
+      PropertyKeyValue(svr, soFar)
 
   private val PropertyKeyValue =
     (svr: MBeanServerConnection, soFar: ObjectNameBuilder) =>
@@ -77,7 +63,6 @@ object ObjectNameParser {
       else
         Set("property")
     }
-
 
   private val PropertyValue =
     (svr: MBeanServerConnection, soFar: ObjectNameBuilder, key: String) =>
@@ -142,4 +127,22 @@ object ObjectNameParser {
     }
   }
 
+  /**
+   * Creates a `Parser[Seq[B]]` from a `A => Parser[(A, B)]`.
+   *
+   * This allows parsing of a `Seq[B]` where the parser for each `B` is dependent upon some previous parser state.
+   * The parser used in each step produces a tuple whose first parameter is the next state and whose second
+   * parameter is the parsed value.
+   *
+   * Note: this method is recursive but not tail recursive.
+   */
+  private def repFlatMap[S, A](init: S)(p: S => Parser[(S, A)]): Parser[Seq[A]] = {
+    def repFlatMapR[S, A](last: S, acc: Seq[A])(p: S => Parser[(S, A)]): Parser[Seq[A]] = {
+      p(last).?.flatMap { more => more match {
+        case Some((s, a)) => repFlatMapR(s, a +: acc)(p)
+        case None => Parser.success(acc.reverse)
+      } }
+    }
+    repFlatMapR[S, A](init, Seq.empty)(p)
+  }
 }
