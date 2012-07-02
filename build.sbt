@@ -27,3 +27,4 @@ assemblySettings
 
 jarName in assembly := "cjmx.jar"
 
+//test in assembly := {}

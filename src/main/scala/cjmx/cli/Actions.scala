@@ -27,6 +27,7 @@ object Actions {
           (context.connected(cnx), Seq(
             "Connected to local virtual machine %s".format(vmid),
             "Connection id: %s".format(cnx.getConnectionId),
+            "Default domain: %s".format(server.getDefaultDomain),
             "%d domains registered consisting of %d total MBeans".format(server.getDomains.length, server.getMBeanCount)
           )).success
         case Failure(err) =>
