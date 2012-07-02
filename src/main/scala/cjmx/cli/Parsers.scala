@@ -53,7 +53,7 @@ object Parsers {
 
   private val jmxObjectNamePropertyReservedChars = Set(':', '"', ',', '=', '*', '?')
   private val jmxObjectNamePropertyNonQuoted =
-    (charClass(c => !jmxObjectNamePropertyReservedChars.contains(c), "object name property key")+).string
+    (charClass(c => !jmxObjectNamePropertyReservedChars.contains(c), "object name property")+).string
 
   private val jmxObjectNamePropertyKey =
     (cnx: JMXConnector, domain: String) => jmxObjectNamePropertyNonQuoted.examples {
@@ -65,17 +65,24 @@ object Parsers {
     }
 
   private val jmxObjectNamePropertyValue =
-    (cnx: JMXConnector, domain: String, key: String) => jmxObjectNamePropertyNonQuoted
+    (cnx: JMXConnector, domain: String, key: String) => jmxObjectNamePropertyNonQuoted.examples {
+      val values = for {
+        name <- cnx.getMBeanServerConnection.queryNames(new ObjectName("%s:*,%s=*".format(domain, key)), null).asScala
+        (key, value) <- name.getKeyPropertyList |> collection.JavaConversions.mapAsScalaMap
+      } yield value
+      values.toSet
+    }
 
   private val jmxObjectNamePropertyKeyValue =
     (cnx: JMXConnector, domain: String) =>
       for {
-        key <- jmxObjectNamePropertyKey(cnx, domain) <~ '='
-        value <- "*" | jmxObjectNamePropertyValue(cnx, domain, key)
+        key <- token(jmxObjectNamePropertyKey(cnx, domain) <~ '=')
+        value <- token("*" | jmxObjectNamePropertyValue(cnx, domain, key))
       } yield "%s=%s".format(key, value)
 
   private val jmxObjectNameProperty =
-    (cnx: JMXConnector, domain: String) => token("*" | jmxObjectNamePropertyKeyValue(cnx, domain)) // TODO support quoting/escaping
+    (cnx: JMXConnector, domain: String) => token("*") | jmxObjectNamePropertyKeyValue(cnx, domain) // TODO support quoting/escaping
+
 
   private val jmxObjectNameProperties =
     (cnx: JMXConnector, domain: String) => rep1sep(jmxObjectNameProperty(cnx, domain), ',') map { _.mkString(",") }
