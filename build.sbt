@@ -21,10 +21,14 @@ libraryDependencies ++=
   "org.scalatest" % "scalatest_2.9.0" % "1.8" % "test" ::
   Nil
 
-unmanagedClasspath in Compile += Path(Path.fileProperty("java.home").asFile.getParent) / "lib" / "tools.jar"
+unmanagedClasspath in Compile ++= toolsJar
 
-assemblySettings
+proguardSettings
 
-jarName in assembly := "cjmx.jar"
+proguardOptions ++= Seq(keepMain("cjmx.Main"),
+  "-dontobfuscate",
+  "-dontoptimize",
+  "-keepattributes Exceptions,InnerClasses,Signature,Deprecated,SourceFile,LineNumberTable,*Annotation*,EnclosingMethod")
 
-//test in assembly := {}
+proguardLibraryJars ++= toolsJar
+
