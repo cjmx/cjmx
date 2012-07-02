@@ -44,7 +44,9 @@ object Parsers {
     (svr: MBeanServerConnection) => JmxObjectName(svr)
 
   val names =
-    (svr: MBeanServerConnection) => token("names" ~ ' ') ~> JmxObjectName(svr) map { name => Actions.ManagedObjectNames(Some(name), None) }
+    (svr: MBeanServerConnection) =>
+      (token("names") ^^^ Actions.ManagedObjectNames(None, None)) |
+      (token("names ") ~> JmxObjectName(svr) map { name => Actions.ManagedObjectNames(Some(name), None) })
 
   val disconnect = token("disconnect") ^^^ Actions.Disconnect
 
