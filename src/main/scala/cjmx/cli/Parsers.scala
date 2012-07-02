@@ -44,8 +44,8 @@ object Parsers {
   val jmxObjectName =
     (cnx: JMXConnector) => for {
       domain <- token(jmxObjectNameDomain(cnx) <~ ':')
-      props <- jmxObjectNameProperties(cnx, domain)
-    } yield new ObjectName(domain + ":" + props)
+      builder <- jmxObjectNameProperties(cnx, domain)
+    } yield builder.oname
 
   val jmxObjectNameDomain =
     (cnx: JMXConnector) => (charClass(_ != ':', "object name domain")+).string.examples(cnx.getMBeanServerConnection.getDomains: _*)
@@ -55,37 +55,63 @@ object Parsers {
   private val jmxObjectNamePropertyNonQuoted =
     (charClass(c => !jmxObjectNamePropertyReservedChars.contains(c), "object name property")+).string
 
+  private case class ObjectNameBuilder(domain: String, properties: Map[String, String] = Map.empty, wildcardProperty: Boolean = false) {
+    def addProperty(key: String, value: String) = copy(properties = properties + (key -> value))
+    def addPropertyWildcard = copy(wildcardProperty = true)
+
+    override def toString = domain + ":" + (
+      properties.map { case (k, v) => k + "=" + v } ++ (if (wildcardProperty) Seq("*") else Seq.empty)
+    ).mkString(",")
+
+    def oname = new ObjectName(toString)
+  }
+
   private val jmxObjectNamePropertyKey =
-    (cnx: JMXConnector, domain: String) => jmxObjectNamePropertyNonQuoted.examples {
+    (cnx: JMXConnector, soFar: ObjectNameBuilder) => jmxObjectNamePropertyNonQuoted.examples {
       val keys = for {
-        name <- cnx.getMBeanServerConnection.queryNames(new ObjectName(domain + ":*"), null).asScala
+        name <- cnx.getMBeanServerConnection.queryNames(soFar.addPropertyWildcard.oname, null).asScala
         (key, value) <- name.getKeyPropertyList |> collection.JavaConversions.mapAsScalaMap
+        if !soFar.properties.contains(key)
       } yield key
-      keys.toSet
+      if (keys.nonEmpty)
+        keys.toSet
+      else
+        Set("property")
     }
 
   private val jmxObjectNamePropertyValue =
-    (cnx: JMXConnector, domain: String, key: String) => jmxObjectNamePropertyNonQuoted.examples {
+    (cnx: JMXConnector, soFar: ObjectNameBuilder, key: String) => jmxObjectNamePropertyNonQuoted.examples {
       val values = for {
-        name <- cnx.getMBeanServerConnection.queryNames(new ObjectName("%s:*,%s=*".format(domain, key)), null).asScala
-        (key, value) <- name.getKeyPropertyList |> collection.JavaConversions.mapAsScalaMap
+        name <- cnx.getMBeanServerConnection.queryNames(soFar.addProperty(key, "*").addPropertyWildcard.oname, null).asScala
+        value <- (name.getKeyPropertyList |> collection.JavaConversions.mapAsScalaMap).get(key)
       } yield value
       values.toSet
     }
 
   private val jmxObjectNamePropertyKeyValue =
-    (cnx: JMXConnector, domain: String) =>
+    (cnx: JMXConnector, soFar: ObjectNameBuilder) =>
       for {
-        key <- token(jmxObjectNamePropertyKey(cnx, domain) <~ '=')
-        value <- token("*" | jmxObjectNamePropertyValue(cnx, domain, key))
-      } yield "%s=%s".format(key, value)
+        key <- token(jmxObjectNamePropertyKey(cnx, soFar) <~ '=')
+        value <- token("*" | jmxObjectNamePropertyValue(cnx, soFar, key))
+      } yield soFar.addProperty(key, value)
 
   private val jmxObjectNameProperty =
-    (cnx: JMXConnector, domain: String) => token("*") | jmxObjectNamePropertyKeyValue(cnx, domain) // TODO support quoting/escaping
+    (cnx: JMXConnector, soFar: ObjectNameBuilder) =>
+      (token("*") ^^^ soFar.addPropertyWildcard) |
+      jmxObjectNamePropertyKeyValue(cnx, soFar) // TODO support quoting/escaping
 
 
   private val jmxObjectNameProperties =
-    (cnx: JMXConnector, domain: String) => rep1sep(jmxObjectNameProperty(cnx, domain), ',') map { _.mkString(",") }
+    (cnx: JMXConnector, domain: String) => {
+      def recurse(soFar: ObjectNameBuilder): Parser[ObjectNameBuilder] = ((',' ~> jmxObjectNameProperty(cnx, soFar))?).flatMap { more =>
+        more match {
+          case Some(more) => recurse(more)
+          case None => Parser.success(soFar)
+        }
+      }
+      jmxObjectNameProperty(cnx, ObjectNameBuilder(domain)) flatMap recurse
+    }
+//      rep1sep(jmxObjectNameProperty(cnx, domain), ',') map { _.mkString(",") }
 
   val names =
     (cnx: JMXConnector) => token("names" ~ ' ') ~> jmxObjectName(cnx) map { name => Actions.ManagedObjectNames(Some(name), None) }
