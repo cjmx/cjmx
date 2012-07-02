@@ -51,7 +51,7 @@ object ObjectNameParser {
       } yield soFar.addProperty(key, value)
 
   private val PropertyKey =
-    (svr: MBeanServerConnection, soFar: ObjectNameBuilder) => PropertyPart(allowUnescapedWildcardChars = false).examples {
+    (svr: MBeanServerConnection, soFar: ObjectNameBuilder) => PropertyPart(valuePart = false).examples {
       val keys = for {
         nameSoFar <- soFar.addPropertyWildcardChar.oname.toSet
         name <- svr.queryNames(nameSoFar, null).asScala
@@ -66,7 +66,7 @@ object ObjectNameParser {
 
   private val PropertyValue =
     (svr: MBeanServerConnection, soFar: ObjectNameBuilder, key: String) =>
-      PropertyPart(allowUnescapedWildcardChars = true).examples(examplePropertyValues(svr, soFar, key))
+      PropertyPart(valuePart = true).examples(examplePropertyValues(svr, soFar, key))
 
   private def examplePropertyValues(svr: MBeanServerConnection, soFar: ObjectNameBuilder, key: String): Set[String] = {
     val values = for {
@@ -77,15 +77,15 @@ object ObjectNameParser {
     values.toSet
   }
 
-  private def PropertyPart(allowUnescapedWildcardChars: Boolean) =
-    PropertyPartNonQuoted(allowUnescapedWildcardChars) | PropertyPartQuoted(allowUnescapedWildcardChars)
+  private def PropertyPart(valuePart: Boolean) =
+    PropertyPartNonQuoted(valuePart) | PropertyPartQuoted(valuePart)
 
-  private def PropertyPartNonQuoted(allowUnescapedWildcardChars: Boolean) =
+  private def PropertyPartNonQuoted(valuePart: Boolean) =
     repFlatMap(none[Char]) { lastChar =>
       val p = {
         if (lastChar == Some('\\'))
           WildcardChar
-        else if (allowUnescapedWildcardChars)
+        else if (valuePart)
           PropertyChar | WildcardChar
         else
           PropertyChar
@@ -93,13 +93,13 @@ object ObjectNameParser {
       p.map { d => (Some(d), d) }
     }.string
 
-  private def PropertyPartQuoted(allowUnescapedWildcardChars: Boolean) =
+  private def PropertyPartQuoted(valuePart: Boolean) =
     (DQuoteChar ~> (repFlatMap(none[Char]) { lastChar =>
       val p = {
         if (lastChar == Some('\\'))
           WildcardChar | DQuoteChar
-        else if (allowUnescapedWildcardChars)
-          PropertyChar | WildcardChar
+        else if (valuePart)
+          PropertyChar | ',' | WildcardChar
         else
           PropertyChar
       }
