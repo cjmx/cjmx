@@ -25,7 +25,7 @@ object Parsers {
     (token("list") | token("jps")) ^^^ Actions.ListVMs
 
   private val vmid: Seq[VirtualMachineDescriptor] => Parser[String] =
-    (vms: Seq[VirtualMachineDescriptor]) => token(charClass(_.isDigit, "virtual machine id")+).string.examples(vms.map { _.id.toString }: _*)
+    (vms: Seq[VirtualMachineDescriptor]) => token(charClass(_.isDigit, "virtual machine id").+.string.examples(vms.map { _.id.toString }: _*))
 
   private val connect: Seq[VirtualMachineDescriptor] => Parser[Actions.Connect] =
     (vms: Seq[VirtualMachineDescriptor]) => (token("connect" ~ ' ') ~> vmid(vms)) map Actions.Connect.apply
