@@ -65,13 +65,12 @@ class ObjectNameParserTest extends FunSuite with ShouldMatchers {
     Parser.parse(str, JmxObjectName(ManagementFactory.getPlatformMBeanServer))
 
   val completionExamples = Seq(
-    ("java.lang:", Set("*", "name=", "type=")),
-    ("java.lang:type=", Set("*", "ClassLoading", "Compilation", "GarbageCollector", "Memory", "MemoryManager", "MemoryPool", "OperatingSystem", "Runtime", "Threading")),
+    ("java.lang:", Set("*", "<key>=", "name=", "type=")),
+    ("java.lang:type=", Set("*", "<value>", "ClassLoading", "Compilation", "GarbageCollector", "Memory", "MemoryManager", "MemoryPool", "OperatingSystem", "Runtime", "Threading")),
     ("java.lang:type=M", Set("Memory", "MemoryManager", "MemoryPool")),
-    ("java.lang:type=MemoryPool,", Set("*", "name=")),
-    ("java.lang:type=MemoryPool,name=", Set("", "*", "Code Cache", "CMS Old Gen", "CMS Perm Gen", "Par Eden Space", "Par Survivor Space"))
-    // See http://stackoverflow.com/questions/11303997/repeating-dependent-parsers-with-scala-sbt-parser-combinators
-    //("java.lang:type=MemoryPool,name=Code Cache,", Set("*", "property="))
+    ("java.lang:type=MemoryPool,", Set("*", "<key>=", "name=")),
+    ("java.lang:type=MemoryPool,name=", Set("*", "<value>", "Code Cache", "CMS Old Gen", "CMS Perm Gen", "Par Eden Space", "Par Survivor Space")),
+    ("java.lang:type=MemoryPool,name=Code Cache,", Set("*", "<key>="))
   )
 
   completionExamples foreach { case (str, expected) =>
