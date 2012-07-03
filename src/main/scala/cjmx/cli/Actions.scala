@@ -120,6 +120,7 @@ object Actions {
               }
             }
           }
+          out <+ ""
         }
       }
       out.lines.success

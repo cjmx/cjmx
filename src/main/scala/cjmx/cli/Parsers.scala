@@ -28,7 +28,7 @@ object Parsers {
     (vms: Seq[VirtualMachineDescriptor]) => token(charClass(_.isDigit, "virtual machine id").+.string.examples(vms.map { _.id.toString }: _*))
 
   private val connect: Seq[VirtualMachineDescriptor] => Parser[Actions.Connect] =
-    (vms: Seq[VirtualMachineDescriptor]) => (token("connect" ~> ' ' ~> flag("-q ")) ~ vmid(vms)) map { case quiet ~ vmid => Actions.Connect(vmid, quiet) }
+    (vms: Seq[VirtualMachineDescriptor]) => (token("connect" ~> ' ') ~> (token(flag("-q ")) ~ vmid(vms))) map { case quiet ~ vmid => Actions.Connect(vmid, quiet) }
 
   private val quit: Parser[Action] = (token("exit", _ => true) | token("done", _ => true) | token("quit")) ^^^ Actions.Quit
 

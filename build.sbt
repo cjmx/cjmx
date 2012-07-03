@@ -25,6 +25,8 @@ unmanagedClasspath in Compile ++= toolsJar
 
 proguardSettings
 
+minJarPath <<= target / "cjmx.jar"
+
 proguardOptions ++= Seq(keepMain("cjmx.Main"),
   "-dontobfuscate",
   "-dontoptimize",
