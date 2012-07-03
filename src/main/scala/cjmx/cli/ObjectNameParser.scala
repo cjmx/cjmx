@@ -20,23 +20,15 @@ object ObjectNameParser {
   val JmxObjectName =
     (svr: MBeanServerConnection) => for {
       domain <- token(JmxObjectNameDomain(svr).? <~ ':') map { _ getOrElse "" }
-      builder <- Properties(svr, domain)
-      oname <- builder.oname.fold(n => Parser.success(n), Parser.failure("invalid object name"))
+      builder <- Properties(svr, ObjectNameBuilder(domain))
+      oname <- builder.oname.fold(e => Parser.failure("invalid object name: " + e), n => Parser.success(n))
     } yield oname
 
   val JmxObjectNameDomain =
     (svr: MBeanServerConnection) => (charClass(_ != ':', "object name domain")+).string.examples(svr.getDomains: _*)
 
-  private val Properties =
-    (svr: MBeanServerConnection, domain: String) => {
-      def recurse(soFar: ObjectNameBuilder): Parser[ObjectNameBuilder] = ((',' ~> Property(svr, soFar))?).flatMap { more =>
-        more match {
-          case Some(more) => recurse(more)
-          case None => Parser.success(soFar)
-        }
-      }
-      Property(svr, ObjectNameBuilder(domain)) flatMap recurse
-    }
+  private def Properties(svr: MBeanServerConnection, soFar: ObjectNameBuilder): Parser[ObjectNameBuilder] =
+    Property(svr, soFar) flatMap { p1 => (EOF ^^^ p1) | (',' ~> Properties(svr, p1)) }
 
   private val Property =
     (svr: MBeanServerConnection, soFar: ObjectNameBuilder) =>
@@ -52,8 +44,9 @@ object ObjectNameParser {
 
   private val PropertyKey =
     (svr: MBeanServerConnection, soFar: ObjectNameBuilder) => PropertyPart(valuePart = false).examples {
+      println("keys for " + soFar.toString)
       val keys = for {
-        nameSoFar <- soFar.addPropertyWildcardChar.oname.toSet
+        nameSoFar <- soFar.addPropertyWildcardChar.oname.toOption.toSet
         name <- svr.queryNames(nameSoFar, null).asScala
         (key, value) <- name.getKeyPropertyList |> collection.JavaConversions.mapAsScalaMap
         if !soFar.properties.contains(key)
@@ -68,7 +61,7 @@ object ObjectNameParser {
     (svr: MBeanServerConnection, soFar: ObjectNameBuilder, key: String) =>
       PropertyPart(valuePart = true).examples {
         val values = for {
-          nameSoFar <- soFar.addProperty(key, "*").addPropertyWildcardChar.oname.toSet
+          nameSoFar <- soFar.addProperty(key, "*").addPropertyWildcardChar.oname.toOption.toSet
           name <- svr.queryNames(nameSoFar, null).asScala
           value <- (name.getKeyPropertyList |> collection.JavaConversions.mapAsScalaMap).get(key)
         } yield value
@@ -79,16 +72,17 @@ object ObjectNameParser {
 
   private case class ObjectNameBuilder(domain: String, properties: Map[String, String] = Map.empty, wildcardProperty: Boolean = false) {
     def addProperty(key: String, value: String) = copy(properties = properties + (key -> value))
+    def addProperties(props: Map[String, String]) = copy(properties = properties ++ props)
     def addPropertyWildcardChar = copy(wildcardProperty = true)
 
     override def toString = domain + ":" + (
       properties.map { case (k, v) => k + "=" + v } ++ (if (wildcardProperty) Seq("*") else Seq.empty)
     ).mkString(",")
 
-    def oname: Option[ObjectName] = {
-      try new Some(new ObjectName(toString))
+    def oname: Validation[MalformedObjectNameException, ObjectName] = {
+      try new ObjectName(toString).success
       catch {
-        case e: MalformedObjectNameException => None
+        case e: MalformedObjectNameException => e.fail
       }
     }
   }
