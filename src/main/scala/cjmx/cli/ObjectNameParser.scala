@@ -43,7 +43,12 @@ object ObjectNameParser {
       } yield soFar.addProperty(key, value)
 
   private val PropertyKey =
-    (svr: MBeanServerConnection, soFar: ObjectNameBuilder) => PropertyPart(valuePart = false).examples {
+    (svr: MBeanServerConnection, soFar: ObjectNameBuilder) => PropertyPart(valuePart = false).flatMap { key =>
+      if (soFar.properties contains key)
+        failure("duplicate key " + key)
+      else
+        success(key)
+    }.examples {
       val keys = for {
         nameSoFar <- soFar.addPropertyWildcardChar.oname.toOption.toSet
         name <- svr.queryNames(nameSoFar, null).asScala

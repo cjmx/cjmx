@@ -50,7 +50,8 @@ class ObjectNameParserTest extends FunSuite with ShouldMatchers {
 
   val invalidExamples = Seq(
     "Domain:desc*=*,*", // wildcard not allowed in key
-    """Domain:"desc""" // unclosed quoted key
+    """Domain:"desc""", // unclosed quoted key
+    ":key=v1,key=v2" // duplicate key
   )
 
   invalidExamples foreach { ex =>
