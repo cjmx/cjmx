@@ -44,7 +44,6 @@ object ObjectNameParser {
 
   private val PropertyKey =
     (svr: MBeanServerConnection, soFar: ObjectNameBuilder) => PropertyPart(valuePart = false).examples {
-      println("keys for " + soFar.toString)
       val keys = for {
         nameSoFar <- soFar.addPropertyWildcardChar.oname.toOption.toSet
         name <- svr.queryNames(nameSoFar, null).asScala
