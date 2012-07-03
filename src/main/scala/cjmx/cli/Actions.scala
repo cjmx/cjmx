@@ -20,12 +20,12 @@ object Actions {
     }
   }
 
-  case class Connect(vmid: String) extends Action {
+  case class Connect(vmid: String, quiet: Boolean) extends Action {
     def apply(context: ActionContext) = {
       JMX.localConnect(vmid) match {
         case Success(cnx) =>
           val server = cnx.getMBeanServerConnection
-          (context.connected(cnx), Seq(
+          (context.connected(cnx), if (quiet) Seq.empty else Seq(
             "Connected to local virtual machine %s".format(vmid),
             "Connection id: %s".format(cnx.getConnectionId),
             "Default domain: %s".format(server.getDefaultDomain),
@@ -68,28 +68,56 @@ object Actions {
       val out = new OutputBuilder
       val info = names map { name => name -> svr.getMBeanInfo(name) }
       for ((name, inf) <- info) {
-        out <+ "Object name: %s".format(name)
+        val nameLine = "Object name: %s".format(name)
+        out <+ nameLine
+        out <+ ("-" multiply nameLine.size)
         out <+ "Description: %s".format(inf.getDescription)
         out <+ ""
-        out <+ "Attributes:"
-        out indented {
-          inf.getAttributes.foreach { attr =>
-            out <+ "%s: %s".format(attr.getName, JMX.humanizeType(attr.getType))
-            if (detailed) out.indented {
-              out <+ "Description: %s".format(attr.getDescription)
+
+        val attributes = inf.getAttributes
+        if (attributes.nonEmpty) {
+          out <+ "Attributes:"
+          out indented {
+            attributes.foreach { attr =>
+              out <+ "%s: %s".format(attr.getName, JMX.humanizeType(attr.getType))
+              if (detailed) out.indented {
+                out <+ "Description: %s".format(attr.getDescription)
+              }
             }
           }
+          out <+ ""
         }
-        out <+ ""
-        out <+ "Operations:"
-        out indented {
-          inf.getOperations foreach { op =>
-            out <+ "%s(%s): %s".format(
-              op.getName,
-              op.getSignature.map { pi => "%s: %s".format(pi.getName, JMX.humanizeType(pi.getType)) }.mkString(", "),
-              JMX.humanizeType(op.getReturnType))
-            if (detailed) out.indented {
-              out <+ "Description: %s".format(op.getDescription)
+
+        val operations = inf.getOperations
+        if (operations.nonEmpty) {
+          out <+ "Operations:"
+          out indented {
+            operations foreach { op =>
+              out <+ "%s(%s): %s".format(
+                op.getName,
+                op.getSignature.map { pi => "%s: %s".format(pi.getName, JMX.humanizeType(pi.getType)) }.mkString(", "),
+                JMX.humanizeType(op.getReturnType))
+              if (detailed) out.indented {
+                out <+ "Description: %s".format(op.getDescription)
+              }
+            }
+          }
+          out <+ ""
+        }
+
+        val notifications = inf.getNotifications
+        if (notifications.nonEmpty) {
+          out <+ "Notifications:"
+          out indented {
+            notifications foreach { nt =>
+              out <+ nt.getName
+              if (detailed) out.indented {
+                out <+ "Description: %S".format(nt.getDescription)
+                out <+ "Notification types:"
+                out indented {
+                  nt.getNotifTypes foreach { out <+ _ }
+                }
+              }
             }
           }
         }

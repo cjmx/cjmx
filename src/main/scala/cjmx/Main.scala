@@ -19,11 +19,14 @@ object Main {
     val reader: Parser[_] => LineReader = if (args.isEmpty) {
       consoleReader
     } else {
-      args.head.parseInt match {
-        case Success(pid) if args.tail.isEmpty =>
-          prefixedReader(Array("connect " + pid), consoleReader)
+      val firstArgAsConnect = args.head.parseInt.map { pid => "connect -q " + pid }
+      firstArgAsConnect match {
+        case Success(cmd) if args.tail.isEmpty =>
+          prefixedReader(cmd +: args.tail, consoleReader)
+        case Success(cmd) =>
+          constReader(cmd +: args.tail :+ "quit").liftReader[Parser[_]]
         case _ =>
-          constReader(args ++ Array("quit")).liftReader[Parser[_]]
+          constReader(args :+ "quit").liftReader[Parser[_]]
       }
     }
 
