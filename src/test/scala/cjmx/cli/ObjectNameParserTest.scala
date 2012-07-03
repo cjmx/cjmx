@@ -26,6 +26,12 @@ class ObjectNameParserTest extends FunSuite with ShouldMatchers {
     """Domain:type="foo",*""",
     """Domain:type="f\"oo",*""",
     """Domain:type="foo,bar",*""",
+    """Domain:type="foo:bar",*""",
+    """Domain:type="foo=bar",*""",
+    """Domain:type="foo?bar",*""",
+    """Domain:type="foo\?bar",*""",
+    """Domain:type="foo*bar",*""",
+    """Domain:type="foo\*bar",*""",
 
     // Escaping
     "Domain:type=a\\*b",

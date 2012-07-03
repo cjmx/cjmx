@@ -91,7 +91,7 @@ object ObjectNameParser {
         if (lastChar == Some('\\'))
           WildcardChar | DQuoteChar
         else if (valuePart)
-          PropertyChar | ',' | WildcardChar
+          QuotedValueChar
         else
           PropertyChar
       }
@@ -100,7 +100,9 @@ object ObjectNameParser {
 
   private lazy val PropertyChar = charClass(c => !PropertyReservedChars.contains(c), "object name property")
   private lazy val WildcardChar = charClass(c => c == '*' || c == '?', "wildcard").examples(Set("*", "?"))
-  private lazy val PropertyReservedChars = Set(':', '"', ',', '=', '*', '?')
+  private lazy val QuotedValueChar = charClass(_ != '\"')
+  private lazy val PropertyReservedChars = PropertyReservedCharsNoDQuote + '\"'
+  private lazy val PropertyReservedCharsNoDQuote = Set(':', ',', '=', '*', '?')
 
 
   /**
