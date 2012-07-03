@@ -16,7 +16,7 @@ object Main {
 
   def main(args: Array[String]) {
     val consoleReader = new FullReader(Some(historyFile), _: Parser[_])
-    val reader = if (args.isEmpty) {
+    val reader: Parser[_] => LineReader = if (args.isEmpty) {
       consoleReader
     } else {
       args.head.parseInt match {
