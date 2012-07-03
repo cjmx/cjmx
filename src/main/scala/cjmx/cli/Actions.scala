@@ -1,10 +1,11 @@
 package cjmx.cli
 
+import scala.collection.JavaConverters._
+
 import scalaz._
 import Scalaz._
 
 import com.sun.tools.attach._
-import scala.collection.JavaConverters._
 
 import javax.management._
 import javax.management.remote.JMXConnector
@@ -58,6 +59,45 @@ object Actions {
       names.toSeq.sorted.map { _.toString }.success
     }
   }
+
+  case class InspectMBeans(name: Option[ObjectName], query: Option[QueryExp], detailed: Boolean) extends SimpleConnectedAction {
+    def act(context: ActionContext, connection: JMXConnector) = {
+      val svr = connection.getMBeanServerConnection
+      val names = svr.queryNames(name.orNull, query.orNull).asScala.toSeq.sorted
+
+      val out = new OutputBuilder
+      val info = names map { name => name -> svr.getMBeanInfo(name) }
+      for ((name, inf) <- info) {
+        out <+ "Object name: %s".format(name)
+        out <+ "Description: %s".format(inf.getDescription)
+        out <+ ""
+        out <+ "Attributes:"
+        out indented {
+          inf.getAttributes.foreach { attr =>
+            out <+ "%s: %s".format(attr.getName, JMX.humanizeType(attr.getType))
+            if (detailed) out.indented {
+              out <+ "Description: %s".format(attr.getDescription)
+            }
+          }
+        }
+        out <+ ""
+        out <+ "Operations:"
+        out indented {
+          inf.getOperations foreach { op =>
+            out <+ "%s(%s): %s".format(
+              op.getName,
+              op.getSignature.map { pi => "%s: %s".format(pi.getName, JMX.humanizeType(pi.getType)) }.mkString(", "),
+              JMX.humanizeType(op.getReturnType))
+            if (detailed) out.indented {
+              out <+ "Description: %s".format(op.getDescription)
+            }
+          }
+        }
+      }
+      out.lines.success
+    }
+  }
+
 
   case class Query(query: ObjectName) extends SimpleConnectedAction {
     def act(context: ActionContext, connection: JMXConnector) = {

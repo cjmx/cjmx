@@ -50,10 +50,7 @@ object ObjectNameParser {
         (key, value) <- name.getKeyPropertyList |> collection.JavaConversions.mapAsScalaMap
         if !soFar.properties.contains(key)
       } yield key
-      if (keys.nonEmpty)
-        keys.toSet
-      else
-        Set("property")
+      keys.toSet + "<key>"
     }
 
   private val PropertyValue =
@@ -64,7 +61,7 @@ object ObjectNameParser {
           name <- svr.queryNames(nameSoFar, null).asScala
           value <- (name.getKeyPropertyList |> collection.JavaConversions.mapAsScalaMap).get(key)
         } yield value
-        values.toSet
+        values.toSet + "<value>"
       }
 
   private def PropertyPart(valuePart: Boolean) = any.+.string

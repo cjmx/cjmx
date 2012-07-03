@@ -48,12 +48,16 @@ object Parsers {
       (token("names") ^^^ Actions.ManagedObjectNames(None, None)) |
       (token("names ") ~> JmxObjectName(svr) map { name => Actions.ManagedObjectNames(Some(name), None) })
 
+  val inspect =
+    (svr: MBeanServerConnection) =>
+      token("inspect ") ~> (flag("-d ") ~ JmxObjectName(svr)) map { case detailed ~ name => Actions.InspectMBeans(Some(name), None, detailed) }
+
   val disconnect = token("disconnect") ^^^ Actions.Disconnect
 
   val connected =
     (cnx: JMXConnector) => {
       val svr = cnx.getMBeanServerConnection
-      names(svr) | query(svr) | disconnect | globalActions !!! "Invalid input"
+      names(svr) | inspect(svr) | query(svr) | disconnect | globalActions !!! "Invalid input"
     }
 }
 

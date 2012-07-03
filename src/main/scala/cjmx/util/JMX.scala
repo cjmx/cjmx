@@ -32,4 +32,10 @@ object JMX {
     localConnectorAddress.toSuccess("Failed to connect to VM ID %s.".format(vm.id))
   }
 
+  def humanizeType(t: String): String = {
+    try Class.forName(t).getSimpleName
+    catch {
+      case cnfe: ClassNotFoundException => t
+    }
+  }
 }
