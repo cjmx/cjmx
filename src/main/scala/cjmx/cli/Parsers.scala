@@ -22,15 +22,15 @@ object Parsers {
   private val ws = charClass(_.isWhitespace)+
 
   private val list: Parser[Action] =
-    (token("list") | token("jps")) ^^^ Actions.ListVMs
+    (token("list") | token("jps")) ^^^ actions.ListVMs
 
   private val vmid: Seq[VirtualMachineDescriptor] => Parser[String] =
     (vms: Seq[VirtualMachineDescriptor]) => token(charClass(_.isDigit, "virtual machine id").+.string.examples(vms.map { _.id.toString }: _*))
 
-  private val connect: Seq[VirtualMachineDescriptor] => Parser[Actions.Connect] =
-    (vms: Seq[VirtualMachineDescriptor]) => (token("connect" ~> ' ') ~> (token(flag("-q ")) ~ vmid(vms))) map { case quiet ~ vmid => Actions.Connect(vmid, quiet) }
+  private val connect: Seq[VirtualMachineDescriptor] => Parser[actions.Connect] =
+    (vms: Seq[VirtualMachineDescriptor]) => (token("connect" ~> ' ') ~> (token(flag("-q ")) ~ vmid(vms))) map { case quiet ~ vmid => actions.Connect(vmid, quiet) }
 
-  private val quit: Parser[Action] = (token("exit", _ => true) | token("done", _ => true) | token("quit")) ^^^ Actions.Quit
+  private val quit: Parser[Action] = (token("exit", _ => true) | token("done", _ => true) | token("quit")) ^^^ actions.Quit
 
   private val globalActions = quit
 
@@ -38,21 +38,21 @@ object Parsers {
     (vms: Seq[VirtualMachineDescriptor]) => list | connect(vms) | globalActions !!! "Invalid input"
 
   val query =
-    (svr: MBeanServerConnection) => (token("query" ~ ' ') ~> queryString(svr)) map Actions.Query
+    (svr: MBeanServerConnection) => (token("query" ~ ' ') ~> queryString(svr)) map actions.Query
 
   val queryString =
     (svr: MBeanServerConnection) => JmxObjectName(svr)
 
   val names =
     (svr: MBeanServerConnection) =>
-      (token("names") ^^^ Actions.ManagedObjectNames(None, None)) |
-      (token("names ") ~> JmxObjectName(svr) map { name => Actions.ManagedObjectNames(Some(name), None) })
+      (token("names") ^^^ actions.ManagedObjectNames(None, None)) |
+      (token("names ") ~> JmxObjectName(svr) map { name => actions.ManagedObjectNames(Some(name), None) })
 
   val inspect =
     (svr: MBeanServerConnection) =>
-      token("inspect ") ~> (flag("-d ") ~ JmxObjectName(svr)) map { case detailed ~ name => Actions.InspectMBeans(Some(name), None, detailed) }
+      token("inspect ") ~> (flag("-d ") ~ JmxObjectName(svr)) map { case detailed ~ name => actions.InspectMBeans(Some(name), None, detailed) }
 
-  val disconnect = token("disconnect") ^^^ Actions.Disconnect
+  val disconnect = token("disconnect") ^^^ actions.Disconnect
 
   val connected =
     (cnx: JMXConnector) => {
