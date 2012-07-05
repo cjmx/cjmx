@@ -4,6 +4,8 @@ import scala.collection.JavaConverters._
 
 import scalaz._
 import Scalaz._
+import scalaz.effect.IO
+import scalaz.iteratee.EnumeratorT
 
 import com.sun.tools.attach._
 
@@ -16,7 +18,7 @@ object Actions {
 
   case object Quit extends Action {
     override def apply(context: ActionContext) = {
-      (context.exit(0), Seq.empty).success
+      (context.exit(0), EnumeratorT.empty[String, IO]).success
     }
   }
 
@@ -25,12 +27,12 @@ object Actions {
       JMX.localConnect(vmid) match {
         case Success(cnx) =>
           val server = cnx.getMBeanServerConnection
-          (context.connected(cnx), if (quiet) Seq.empty else Seq(
+          (context.connected(cnx), enumMessageList(if (quiet) List.empty else List(
             "Connected to local virtual machine %s".format(vmid),
             "Connection id: %s".format(cnx.getConnectionId),
             "Default domain: %s".format(server.getDefaultDomain),
             "%d domains registered consisting of %d total MBeans".format(server.getDomains.length, server.getMBeanCount)
-          )).success
+          ))).success
         case Failure(err) =>
           NonEmptyList(err).fail
       }
@@ -40,7 +42,7 @@ object Actions {
   case object Disconnect extends ConnectedAction {
     def applyConnected(context: ActionContext, connection: JMXConnector) = {
       connection.close
-      (context.disconnected, Seq("Disconnected")).success
+      (context.disconnected, enumMessages("Disconnected")).success
     }
   }
 
@@ -56,14 +58,14 @@ object Actions {
   case class ManagedObjectNames(name: Option[ObjectName], query: Option[QueryExp]) extends SimpleConnectedAction {
     def act(context: ActionContext, connection: JMXConnector) = {
       val names = connection.getMBeanServerConnection.queryNames(name.orNull, query.orNull).asScala
-      names.toSeq.sorted.map { _.toString }.success
+      names.toList.sorted.map { _.toString }.success
     }
   }
 
   case class InspectMBeans(name: Option[ObjectName], query: Option[QueryExp], detailed: Boolean) extends SimpleConnectedAction {
     def act(context: ActionContext, connection: JMXConnector) = {
       val svr = connection.getMBeanServerConnection
-      val names = svr.queryNames(name.orNull, query.orNull).asScala.toSeq.sorted
+      val names = svr.queryNames(name.orNull, query.orNull).asScala.toList.sorted
 
       val out = new OutputBuilder
       val info = names map { name => name -> svr.getMBeanInfo(name) }
@@ -131,7 +133,7 @@ object Actions {
   case class Query(query: ObjectName) extends SimpleConnectedAction {
     def act(context: ActionContext, connection: JMXConnector) = {
       // TODO
-      Seq.empty.success
+      List.empty.success
     }
   }
 }

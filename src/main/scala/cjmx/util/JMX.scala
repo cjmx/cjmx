@@ -12,8 +12,8 @@ import com.sun.tools.attach._
 
 object JMX {
 
-  def localVMs: Seq[VirtualMachineDescriptor] =
-    VirtualMachine.list.asScala.toSeq.sortBy { _.id }
+  def localVMs: List[VirtualMachineDescriptor] =
+    VirtualMachine.list.asScala.toList.sortBy { _.id }
 
   def localConnect(vmid: String): Validation[String, JMXConnector] = for {
     vmd <- localVMs.find { _.id == vmid }.toSuccess("No virtual machine with VM ID %s".format(vmid))

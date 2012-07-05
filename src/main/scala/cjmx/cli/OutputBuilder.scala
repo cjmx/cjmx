@@ -24,6 +24,6 @@ final class OutputBuilder {
 
   private def indentedStr(s: String) = (" " multiply (indentation * 2)) + s
 
-  def lines: Seq[String] = _lines.toSeq
+  def lines: List[String] = _lines.toList
 }
 

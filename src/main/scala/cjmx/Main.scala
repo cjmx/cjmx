@@ -30,7 +30,7 @@ object Main {
       }
     }
 
-    val statusCode = REPL.run(reader, new PrintWriter(Console.out, true))
+    val statusCode = REPL.run(reader, Console.out)
     System.exit(statusCode)
   }
 
