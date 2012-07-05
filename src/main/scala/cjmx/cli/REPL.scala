@@ -16,7 +16,7 @@ import Scalaz._
 import scalaz.iteratee._
 import IterateeT._
 
-import cjmx.util.JMX
+import cjmx.util.jmx.JMX
 
 
 object REPL {

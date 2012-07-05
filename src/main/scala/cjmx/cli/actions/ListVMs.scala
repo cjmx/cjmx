@@ -3,7 +3,7 @@ package actions
 
 import scalaz.syntax.validation._
 
-import cjmx.util.JMX
+import cjmx.util.jmx.JMX
 
 
 object ListVMs extends SimpleAction {

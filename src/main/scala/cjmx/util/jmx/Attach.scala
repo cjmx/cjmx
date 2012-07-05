@@ -1,4 +1,4 @@
-package cjmx.util
+package cjmx.util.jmx
 
 import scala.collection.JavaConverters._
 import scalaz.Validation
@@ -10,7 +10,7 @@ import java.io.File
 import javax.management.remote._
 import com.sun.tools.attach._
 
-object JMX {
+trait Attach {
 
   def localVMs: List[VirtualMachineDescriptor] =
     VirtualMachine.list.asScala.toList.sortBy { _.id }
@@ -31,11 +31,7 @@ object JMX {
     }
     localConnectorAddress.toSuccess("Failed to connect to VM ID %s.".format(vm.id))
   }
-
-  def humanizeType(t: String): String = {
-    try Class.forName(t).getSimpleName
-    catch {
-      case cnfe: ClassNotFoundException => t
-    }
-  }
 }
+
+object Attach extends Attach
+

@@ -2,11 +2,8 @@ package cjmx.cli
 
 import scala.collection.mutable.ListBuffer
 
-import scalaz._
-import Scalaz._
-
-
 final class OutputBuilder {
+  private val newline = "%n".format()
   private val _lines = ListBuffer[String]()
   private var indentation = 0
 
@@ -22,7 +19,7 @@ final class OutputBuilder {
     finally outdent()
   }
 
-  private def indentedStr(s: String) = (" " multiply (indentation * 2)) + s
+  private def indentedStr(s: String) = s.split(newline).map { l => (" " * (indentation * 2)) + l }.mkString(newline)
 
   def lines: List[String] = _lines.toList
 }

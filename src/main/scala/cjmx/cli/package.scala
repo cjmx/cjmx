@@ -8,7 +8,9 @@ import scalaz.iteratee._
 
 import javax.management.remote.JMXConnector
 
-package object cli extends cjmx.util.ToRichMBeanServerConnection {
+import cjmx.util.jmx.JMX
+
+package object cli extends JMX {
   type ActionResult = ValidationNEL[String, (ActionContext, EnumeratorT[String, IO])]
   type Action = ActionContext => ActionResult
 

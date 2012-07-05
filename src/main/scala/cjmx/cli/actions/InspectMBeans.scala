@@ -6,7 +6,7 @@ import scalaz.syntax.validation._
 import javax.management.{ObjectName, QueryExp}
 import javax.management.remote.JMXConnector
 
-import cjmx.util.JMX
+import cjmx.util.jmx.JMX
 
 
 case class InspectMBeans(name: Option[ObjectName], query: Option[QueryExp], detailed: Boolean) extends SimpleConnectedAction {

@@ -38,7 +38,7 @@ object Parsers {
     (vms: Seq[VirtualMachineDescriptor]) => list | connect(vms) | globalActions !!! "Invalid input"
 
   val query =
-    (svr: MBeanServerConnection) => (token("query" ~ ' ') ~> queryString(svr)) map actions.Query
+    (svr: MBeanServerConnection) => (token("query" ~ ' ') ~> queryString(svr)) map { name => actions.Query(Some(name), None) }
 
   val queryString =
     (svr: MBeanServerConnection) => JmxObjectName(svr)
