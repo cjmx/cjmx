@@ -137,6 +137,6 @@ class QueryExpParserTest extends FunSuite with ShouldMatchers {
   }
 
   private def parse(str: String): Either[String, QueryExp] =
-    Parser.parse(str, JMXParsers.QueryExpParser(ManagementFactory.getPlatformMBeanServer))
+    Parser.parse(str, JMXParsers.QueryExpParser(ManagementFactory.getPlatformMBeanServer, new ObjectName("java.lang:*")))
 }
 

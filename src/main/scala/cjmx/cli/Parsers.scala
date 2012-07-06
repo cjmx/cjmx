@@ -36,22 +36,22 @@ object Parsers {
     (vms: Seq[VirtualMachineDescriptor]) => list | connect(vms) | globalActions !!! "Invalid input"
 
   val query =
-    (svr: MBeanServerConnection) => token("query" ~ ' ') ~> queryString(svr)
+    (svr: MBeanServerConnection) => token("query ") ~> token("from ") ~> nameAndQuery(svr) map { case name ~ where => actions.Query(Some(name), where) }
 
-  val queryString =
+  private val nameAndQuery: MBeanServerConnection => Parser[(ObjectName, Option[QueryExp])] =
     (svr: MBeanServerConnection) => for {
-      name <- token("from '") ~> ObjectNameParser(svr) <~ token('\'')
+      name <- QuotedObjectNameParser(svr)
       query <- (token(" where ") ~> JMXParsers.QueryExpParser(svr, name)).?
-    } yield actions.Query(Some(name), query)
+    } yield (name, query)
 
   val names =
     (svr: MBeanServerConnection) =>
       (token("names") ^^^ actions.ManagedObjectNames(None, None)) |
-      (token("names ") ~> ObjectNameParser(svr) map { name => actions.ManagedObjectNames(Some(name), None) })
+      (token("names ") ~> nameAndQuery(svr) map { case name ~ where => actions.ManagedObjectNames(Some(name), where) })
 
   val inspect =
     (svr: MBeanServerConnection) =>
-      token("inspect ") ~> (flag("-d ") ~ ObjectNameParser(svr)) map { case detailed ~ name => actions.InspectMBeans(Some(name), None, detailed) }
+      token("inspect ") ~> (flag("-d ") ~ nameAndQuery(svr)) map { case detailed ~ (name ~ query) => actions.InspectMBeans(Some(name), query, detailed) }
 
   val disconnect = token("disconnect") ^^^ actions.Disconnect
 
