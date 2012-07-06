@@ -2,19 +2,17 @@ package cjmx.cli
 
 import scala.annotation.tailrec
 
+import scalaz._
+import Scalaz._
 import scalaz.effect._
 import scalaz.iteratee._
+import IterateeT._
 
 import java.io.PrintWriter
 import java.io.PrintStream
 
 import sbt.LineReader
 import sbt.complete.Parser
-
-import scalaz._
-import Scalaz._
-import scalaz.iteratee._
-import IterateeT._
 
 import cjmx.util.jmx.JMX
 
@@ -28,7 +26,7 @@ object REPL {
             case Disconnected => Parsers.disconnected(JMX.localVMs)
             case Connected(cnx) => Parsers.connected(cnx)
           }
-          def readLine = reader(parser).readLine("> ").filter { _.nonEmpty }
+          def readLine = reader(parser).readLine("> ").fold(some, some("exit")).filter { _.nonEmpty }
           val result = for {
             line <- readLine.success[NonEmptyList[String]]
             parse = (line: String) => Validation.fromEither(Parser.parse(line, parser)).toValidationNel
