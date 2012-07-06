@@ -16,7 +16,7 @@ Once cjmx starts, a prompt will appear.  Cjmx makes heavy use of tab completion,
 
     java -jar cjmx.jar 1234
     > <TAB>
-    disconnect   inspect      names        query        quit
+    disconnect   exit         inspect      names        query
     > names java.<TAB>
     java.lang:           java.util.logging:
     > inspect -d java.lang:type=
