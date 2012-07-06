@@ -24,9 +24,9 @@ object Main {
         case Success(cmd) if args.tail.isEmpty =>
           prefixedReader(cmd +: args.tail, consoleReader)
         case Success(cmd) =>
-          constReader(cmd +: args.tail :+ "quit").liftReader[Parser[_]]
+          constReader(cmd +: args.tail :+ "exit").liftReader[Parser[_]]
         case _ =>
-          constReader(args :+ "quit").liftReader[Parser[_]]
+          constReader(args :+ "exit").liftReader[Parser[_]]
       }
     }
 

@@ -56,7 +56,7 @@ Once cjmx starts, a prompt will appear.  Cjmx makes heavy use of tab completion,
           java.management.memory.threshold.exceeded
           java.management.memory.collection.threshold.exceeded
 
-    > query java.lang:type=Memory
+    > query from 'java.lang:type=Memory'
     java.lang:type=Memory
     ---------------------
       Verbose: false
@@ -74,7 +74,7 @@ Once cjmx starts, a prompt will appear.  Cjmx makes heavy use of tab completion,
 
 Alternatively, cjmx can run a series of commands and then terminate.  This is done by specifying each command as a program argument.  For example:
 
-    java -jar cjmx.jar 1234 "inspect java.lang:type=Memory" "query java.lang:type=Memory"
+    java -jar cjmx.jar 1234 "inspect java.lang:type=Memory" "query from 'java.lang:type=Memory'"
     Object name: java.lang:type=Memory
     ----------------------------------
     Description: Information on the management interface of the MBean

@@ -8,7 +8,7 @@ import sbt.complete.Parser
 import org.scalatest._
 import org.scalatest.matchers._
 
-import ObjectNameParser._
+import JMXParsers._
 
 
 class ObjectNameParserTest extends FunSuite with ShouldMatchers {
@@ -69,7 +69,7 @@ class ObjectNameParserTest extends FunSuite with ShouldMatchers {
   }
 
   def parse(str: String): Either[String, ObjectName] =
-    Parser.parse(str, JmxObjectName(ManagementFactory.getPlatformMBeanServer))
+    Parser.parse(str, ObjectNameParser(ManagementFactory.getPlatformMBeanServer))
 
   val completionExamples = Seq(
     ("java.lang:", Set("*", "<key>=", "name=", "type=")),
@@ -87,5 +87,5 @@ class ObjectNameParserTest extends FunSuite with ShouldMatchers {
   }
 
   def completions(str: String): Set[String] =
-    Parser.completions(JmxObjectName(ManagementFactory.getPlatformMBeanServer), str, Int.MaxValue).get.map { _.display }
+    Parser.completions(ObjectNameParser(ManagementFactory.getPlatformMBeanServer), str, Int.MaxValue).get.map { _.display }
 }
