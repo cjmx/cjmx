@@ -39,11 +39,10 @@ object Parsers {
     (svr: MBeanServerConnection) => token("query" ~ ' ') ~> queryString(svr)
 
   val queryString =
-    (svr: MBeanServerConnection) => (
-      (token("from '") ~> ObjectNameParser(svr) <~ token('\'')) ~
-      (token(" where ") ~> JMXParsers.QueryExpParser(svr)).?
-      map { case name ~ where => actions.Query(Some(name), where) }
-    )
+    (svr: MBeanServerConnection) => for {
+      name <- token("from '") ~> ObjectNameParser(svr) <~ token('\'')
+      query <- (token(" where ") ~> JMXParsers.QueryExpParser(svr, name)).?
+    } yield actions.Query(Some(name), query)
 
   val names =
     (svr: MBeanServerConnection) =>

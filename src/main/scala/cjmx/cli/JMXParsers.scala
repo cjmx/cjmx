@@ -130,11 +130,14 @@ object JMXParsers {
 
 
 
-  lazy val QueryExpParser: MBeanServerConnection => Parser[QueryExp] = (svr: MBeanServerConnection) => {
-    QueryExpProductions.Query
+  lazy val QueryExpParser: (MBeanServerConnection, ObjectName) => Parser[QueryExp] = (svr: MBeanServerConnection, name: ObjectName) => {
+    val attributeNames = svr.toScala.queryNames(Some(name), None).flatMap { n =>
+      svr.getMBeanInfo(n).getAttributes.map { _.getName }.toSet
+    }
+    new QueryExpProductions(attributeNames).Query
   }
 
-  private object QueryExpProductions {
+  private class QueryExpProductions(attributeNames: Set[String]) {
     import javax.management.{Query => Q}
 
     lazy val Query: Parser[QueryExp] = { for {
@@ -168,7 +171,7 @@ object JMXParsers {
       (token("instanceof ") ~> (token(SpaceClass.* ~> StringLiteral)).examples("'<type name>'")).map(Q.isInstanceOf)
 
     lazy val ValuePredicate =
-      (Value flatMap { lhs => SpaceClass.* ~> {
+      (token(Value) flatMap { lhs => SpaceClass.* ~> {
         val dependentOnOnlyValueExp =
           RelationalOperation(lhs) | (SpaceClass.+ ~> (Negatable(Between(lhs)) | Negatable(In(lhs))))
         lhs match {
@@ -240,7 +243,7 @@ object JMXParsers {
         case Some('-' ~ rhs) => Q.minus(lhs, rhs)
         case None => lhs
       }
-    }.examples("<value>")
+    }.examples(Set("<value>", "<attribute>") ++ attributeNames)
 
     lazy val Sum: Parser[ValueExp] = {
       for {
@@ -254,7 +257,7 @@ object JMXParsers {
     }
 
     lazy val Product: Parser[ValueExp] = Attribute | Literal | Parenthesized(Value).examples("(<value>)")
-    lazy val Attribute = NonQualifiedAttribute | QualifiedAttribute
+    lazy val Attribute = (NonQualifiedAttribute | QualifiedAttribute).examples("<attribute>")
     lazy val NonQualifiedAttribute = Identifier map Q.attr
     lazy val QualifiedAttribute = (rep1sep(JavaIdentifier, '.') <~ '#') ~ JavaIdentifier map { case clsParts ~ attr => Q.attr(clsParts.mkString("."), attr) }
 
