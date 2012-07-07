@@ -33,9 +33,10 @@ trait JMXFunctions {
       case composite: CompositeData =>
         val keys = composite.getCompositeType.keySet.asScala.toSeq.sorted
         val keysAndValues = keys zip composite.getAll(keys.toArray).toSeq
-        val newline = "%n".format()
-        keysAndValues.map { case (k, v) => "  %s: %s".format(k, JMXTags.Value(v).shows) }.mkString(newline, newline, "")
-      case arr: Array[_] => java.util.Arrays.toString(arr.asInstanceOf[Array[AnyRef]])
+        keysAndValues.
+          map { case (k, v) => "%s: %s".format(k, JMXTags.Value(v).shows) }.
+          mkString(newline, newline, "") |> indentLines(2)
+      case arr: Array[_] => arr.map { case v: AnyRef => JMXTags.Value(v).shows }.mkString("[", ", ", "]")
       case n if n eq null => "null"
       case other => other.toString
     }
@@ -44,6 +45,27 @@ trait JMXFunctions {
   def humanizeAttribute(a: Attribute): String = {
     "%s: %s".format(a.getName, JMXTags.Value(a.getValue).shows)
   }
+
+  def typeToClass(cl: ClassLoader)(t: String): Option[Class[_]] = {
+    t match {
+      case "byte" => Some(classOf[java.lang.Byte])
+      case "char" => Some(classOf[java.lang.Character])
+      case "short" => Some(classOf[java.lang.Short])
+      case "int" => Some(classOf[java.lang.Integer])
+      case "long" => Some(classOf[java.lang.Long])
+      case "float" => Some(classOf[java.lang.Float])
+      case "double" => Some(classOf[java.lang.Double])
+      case other =>
+        try Some(Class.forName(t, true, cl))
+        catch {
+          case e: ClassNotFoundException => None
+        }
+    }
+  }
+
+  private val newline = "%n".format()
+  private def indentLines(indent: Int)(s: String): String =
+    s.split(newline).map { s => (" " * indent) + s }.mkString(newline)
 }
 
 object JMXFunctions extends JMXFunctions

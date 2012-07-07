@@ -261,31 +261,64 @@ object JMXParsers {
     lazy val NonQualifiedAttribute = Identifier map Q.attr
     lazy val QualifiedAttribute = (rep1sep(JavaIdentifier, '.') <~ '#') ~ JavaIdentifier map { case clsParts ~ attr => Q.attr(clsParts.mkString("."), attr) }
 
-    lazy val Identifier = (JavaIdentifier | QuotedIdentifier).examples("identifier")
-
-    lazy val JavaIdentifier: Parser[String] = (
-      charClass(c => c.isLetter || c == '_' | c == '$', "letter, underscore, or dollar sign") ~
-      charClass(c => c.isLetter || c == '_' | c == '$' || c.isDigit, "letter, digit, underscore, or dollar sign").* map {
-        case x ~ xs => (x +: xs).mkString
-      }
-    ).examples("identifier")
-
-    lazy val QuotedIdentifier: Parser[String] =
-      (DQuoteChar ~> (charClass(_ != DQuoteChar) | (DQuoteChar ~ DQuoteChar ^^^ DQuoteChar)).* <~ DQuoteChar).string.examples("\"identifier\"")
-
     lazy val Literal = BooleanLiteral | LongLiteral | DoubleLiteral | StringLiteral
-
-    lazy val BooleanLiteral = ("true" ^^^ true) | ("false" ^^^ false) map Q.value examples ("true", "false")
-
-    lazy val LongLiteral = mapOrFail('-'.? ~ Digit.+) {
-      case neg ~ digits => (neg.toSeq ++ digits).mkString.toLong
-    } map Q.value examples ("<number>")
-
-    lazy val DoubleLiteral = mapOrFail('-'.? ~ Digit.+ ~ ('.'.? ~> Digit.+.?)) {
-      case neg ~ digits ~ mantissaDigits =>
-        (neg.toSeq ++ digits ++ "." ++ mantissaDigits.getOrElse(Seq.empty)).mkString.toDouble
-    } map Q.value examples("<number>")
-
-    lazy val StringLiteral = '\'' ~> (charClass(_ != '\'') | ('\\' ~> '\'')).*.string <~ '\'' map Q.value examples("'<string>'")
+    lazy val BooleanLiteral = BooleanValue map Q.value
+    lazy val LongLiteral = LongValue map Q.value
+    lazy val DoubleLiteral = DoubleValue map Q.value
+    lazy val StringLiteral = StringValue map Q.value
   }
+
+
+  lazy val Invocation: MBeanServerConnection => Parser[(String, Seq[AnyRef])] =
+    (svr: MBeanServerConnection) => {
+      Identifier ~ (token("(") ~> repsep(SpaceClass.* ~> InvocationParameter(svr), SpaceClass.* ~ ',') <~ token(")"))
+    }
+
+  private lazy val InvocationParameter: MBeanServerConnection => Parser[AnyRef] =
+    (svr: MBeanServerConnection) => {
+      (BooleanValue map { v => (java.lang.Boolean.valueOf(v): AnyRef) }) |
+      (IntValue map { v => (java.lang.Integer.valueOf(v): AnyRef) }) |
+      (LongValue map { v => (java.lang.Long.valueOf(v): AnyRef) }) |
+      (DoubleValue map { v => (java.lang.Double.valueOf(v): AnyRef) }) |
+      (StringValue) |
+      Arr(BooleanValue) |
+      Arr(IntValue) |
+      Arr(LongValue) |
+      Arr(DoubleValue) |
+      Arr(StringValue)
+    }
+
+  private def Arr[A: ClassManifest](p: Parser[A]): Parser[Array[A]] =
+    (token("{") ~> repsep(SpaceClass.* ~> p, SpaceClass.* ~> ',') <~ SpaceClass.* <~ token("}")) map { _.toArray }
+
+
+  private lazy val Identifier = (JavaIdentifier | QuotedIdentifier).examples("identifier")
+
+  private lazy val JavaIdentifier: Parser[String] = (
+    charClass(c => c.isLetter || c == '_' | c == '$', "letter, underscore, or dollar sign") ~
+    charClass(c => c.isLetter || c == '_' | c == '$' || c.isDigit, "letter, digit, underscore, or dollar sign").* map {
+      case x ~ xs => (x +: xs).mkString
+    }
+  ).examples("identifier")
+
+  private lazy val QuotedIdentifier: Parser[String] =
+    (DQuoteChar ~> (charClass(_ != DQuoteChar) | (DQuoteChar ~ DQuoteChar ^^^ DQuoteChar)).* <~ DQuoteChar).string.examples("\"identifier\"")
+
+
+  private lazy val BooleanValue = ("true" ^^^ true) | ("false" ^^^ false)
+
+  private lazy val IntValue = mapOrFail('-'.? ~ Digit.+) {
+    case neg ~ digits => (neg.toSeq ++ digits).mkString.toInt
+  } examples ("<number>")
+
+  private lazy val LongValue = mapOrFail('-'.? ~ Digit.+ <~ ('L'.id | 'l').?) {
+    case neg ~ digits => (neg.toSeq ++ digits).mkString.toLong
+  } examples ("<number>")
+
+  private lazy val DoubleValue = mapOrFail('-'.? ~ Digit.+ ~ ('.'.? ~> Digit.+.?)) {
+    case neg ~ digits ~ mantissaDigits =>
+      (neg.toSeq ++ digits ++ "." ++ mantissaDigits.getOrElse(Seq.empty)).mkString.toDouble
+  } examples("<number>")
+
+  private lazy val StringValue = '\'' ~> (charClass(_ != '\'') | ('\\' ~> '\'')).*.string <~ '\'' examples("'<string>'")
 }

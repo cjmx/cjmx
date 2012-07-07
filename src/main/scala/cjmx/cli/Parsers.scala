@@ -53,12 +53,16 @@ object Parsers {
     (svr: MBeanServerConnection) =>
       token("inspect ") ~> (flag("-d ") ~ nameAndQuery(svr)) map { case detailed ~ (name ~ query) => actions.InspectMBeans(Some(name), query, detailed) }
 
+  val invoke =
+    (svr: MBeanServerConnection) =>
+      token("invoke ") ~> JMXParsers.Invocation(svr) ~ (token(" on ") ~> nameAndQuery(svr)) map { case ((opName, args)) ~ (name ~ query) => actions.InvokeOperation(Some(name), query, opName, args) }
+
   val disconnect = token("disconnect") ^^^ actions.Disconnect
 
   val connected =
     (cnx: JMXConnector) => {
       val svr = cnx.getMBeanServerConnection
-      names(svr) | inspect(svr) | query(svr) | disconnect | globalActions !!! "Invalid input"
+      names(svr) | inspect(svr) | query(svr) | invoke(svr) | disconnect | globalActions !!! "Invalid input"
     }
 }
 
