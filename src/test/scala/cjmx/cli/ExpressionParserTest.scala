@@ -14,10 +14,15 @@ class ExpressionParserTest extends FunSuite with ShouldMatchers {
 
   val validExamples = Seq(
     "1 + 2" -> "(+ 1 2)",
+    "1+2" -> "(+ 1 2)",
     "1 + 2 / 3" -> "(+ 1 (/ 2 3))",
+    "1+2/3" -> "(+ 1 (/ 2 3))",
     "1 + 2 - 3" -> "(- (+ 1 2) 3)",
+    "1+2-3" -> "(- (+ 1 2) 3)",
     "1 / 2 * 2" -> "(* (/ 1 2) 2)",
-    "1 / (2 * 2)" -> "(/ 1 (* 2 2))"
+    "1/2*2" -> "(* (/ 1 2) 2)",
+    "1 / (2 * 2)" -> "(/ 1 (* 2 2))",
+    "1/(2*2)" -> "(/ 1 (* 2 2))"
   )
 
   validExamples foreach { case (ex, expectedOutput) =>
