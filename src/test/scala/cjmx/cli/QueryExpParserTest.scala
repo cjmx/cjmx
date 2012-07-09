@@ -84,6 +84,18 @@ class QueryExpParserTest extends FunSuite with ShouldMatchers {
         Query.value(1)
       ),
 
+    "Used / Max * 100 < 50" ->
+      Query.lt(
+        Query.times(
+          Query.div(
+            Query.attr("Used"),
+            Query.attr("Max")
+          ),
+          Query.value(100)
+        ),
+        Query.value(50)
+      ),
+
     "Name = 'Mac OS X'" ->
       Query.eq(Query.attr("Name"), Query.value("Mac OS X")),
 

@@ -1,6 +1,7 @@
 package cjmx.cli
 
 import sbt.complete.Parser
+import sbt.complete.DefaultParsers.SpaceClass
 
 
 /** Provides generic parsers that add to the functionality provided by SBT complete. */
@@ -24,5 +25,7 @@ object MoreParsers {
     }
     repFlatMapR[S, A](init, Seq.empty)(p)
   }
+
+  def ws = SpaceClass
 }
 
