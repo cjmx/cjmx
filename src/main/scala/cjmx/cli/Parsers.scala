@@ -57,12 +57,43 @@ object Parsers {
     (svr: MBeanServerConnection) =>
       token("invoke ") ~> JMXParsers.Invocation(svr) ~ (token(" on ") ~> nameAndQuery(svr)) map { case ((opName, args)) ~ (name ~ query) => actions.InvokeOperation(Some(name), query, opName, args) }
 
+  private lazy val mbeanAction =
+    (svr: MBeanServerConnection) => for {
+      _ <- token("mbeans ")
+      nameAndQuery <- token("from ") ~> nameAndQuery(svr) <~ SpaceClass.*
+      name = nameAndQuery._1
+      query = nameAndQuery._2
+      action <- postfixNames(svr, name, query) | postfixSelect(svr, name, query) | postfixInspect(svr, name, query) | postfixInvoke(svr, name, query)
+    } yield action
+
+  private lazy val postfixNames =
+    (svr: MBeanServerConnection, name: ObjectName, query: Option[QueryExp]) =>
+      token("names") ^^^ actions.ManagedObjectNames(Some(name), query)
+
+  private lazy val postfixInspect =
+    (svr: MBeanServerConnection, name: ObjectName, query: Option[QueryExp]) =>
+      (token("inspect") ~> flag(" -d")) map {
+        case detailed => actions.InspectMBeans(Some(name), query, detailed)
+      }
+
+  private lazy val postfixSelect =
+    (svr: MBeanServerConnection, name: ObjectName, query: Option[QueryExp]) =>
+      (token("select ") ~> SpaceClass.* ~> JMXParsers.Projection(svr, name, query)) map {
+        case projection => actions.Query(Some(name), query, projection)
+      }
+
+  private lazy val postfixInvoke =
+    (svr: MBeanServerConnection, name: ObjectName, query: Option[QueryExp]) =>
+      (token("invoke ") ~> SpaceClass.* ~> JMXParsers.Invocation(svr)) map {
+        case opName ~ args => actions.InvokeOperation(Some(name), query, opName, args)
+      }
+
   val disconnect = token("disconnect") ^^^ actions.Disconnect
 
   val connected =
     (cnx: JMXConnector) => {
       val svr = cnx.getMBeanServerConnection
-      names(svr) | inspect(svr) | query(svr) | invoke(svr) | disconnect | globalActions !!! "Invalid input"
+      names(svr) | inspect(svr) | query(svr) | invoke(svr) | mbeanAction(svr) | disconnect | globalActions !!! "Invalid input"
     }
 }
 

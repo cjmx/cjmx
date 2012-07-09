@@ -14,6 +14,8 @@ import javax.management.remote.JMXConnector
 
 import MoreParsers._
 
+import cjmx.util.jmx.JMX
+
 
 object JMXParsers {
   import Parser._
@@ -269,6 +271,31 @@ object JMXParsers {
   }
 
 
+  lazy val Projection: (MBeanServerConnection, ObjectName, Option[QueryExp]) => Parser[Seq[Attribute] => Seq[Attribute]] =
+    (svr: MBeanServerConnection, name: ObjectName, query: Option[QueryExp]) => {
+      (token("*") ^^^ (identity[Seq[Attribute]] _)) |
+      (rep1sep(ProjectionAttributeRename(svr, name, query), SpaceClass.* ~ ',' ~ SpaceClass.*) map { attrMappings =>
+        val lookup: Map[String, List[AnyRef => Option[Attribute]]] = attrMappings.map { case (k, v) => Map(k -> List(v)) }.toList.concatenate
+        (attrs: Seq[Attribute]) => attrs.collect {
+          case attr if lookup contains attr.getName => lookup(attr.getName).flatMap { f => f(attr.getValue) }
+        }.flatten
+      })
+    }
+
+  private lazy val ProjectionAttributeRename: (MBeanServerConnection, ObjectName, Option[QueryExp]) => Parser[(String, AnyRef => Option[Attribute])] =
+    (svr: MBeanServerConnection, name: ObjectName, query: Option[QueryExp]) =>
+      ProjectionAttributeInclusion(svr, name, query) ~ (token(" as ") ~> Identifier).? map {
+        case (n, f) ~ Some(t) => (n, v => f(v).map { vv => new Attribute(t, vv.getValue) })
+        case (n, f) ~ None => (n, f)
+      }
+
+  private lazy val ProjectionAttributeInclusion: (MBeanServerConnection, ObjectName, Option[QueryExp]) => Parser[(String, AnyRef => Option[Attribute])] =
+    (svr: MBeanServerConnection, name: ObjectName, query: Option[QueryExp]) => {
+      (rep1sep(Identifier, '.') map { ids =>
+        (ids.head, v => JMX.extractValue(v, ids.tail) map { vv => new Attribute(ids.mkString("."), vv) })
+      })
+    }
+
   lazy val Invocation: MBeanServerConnection => Parser[(String, Seq[AnyRef])] =
     (svr: MBeanServerConnection) => {
       Identifier ~ (token("(") ~> repsep(SpaceClass.* ~> InvocationParameter(svr), SpaceClass.* ~ ',') <~ token(")"))
@@ -292,6 +319,7 @@ object JMXParsers {
     (token("{") ~> repsep(SpaceClass.* ~> p, SpaceClass.* ~> ',') <~ SpaceClass.* <~ token("}")) map { _.toArray }
 
 
+  private lazy val DottedIdentifier = rep1sep(Identifier, '.')
   private lazy val Identifier = (JavaIdentifier | QuotedIdentifier).examples("identifier")
 
   private lazy val JavaIdentifier: Parser[String] = (

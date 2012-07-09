@@ -11,7 +11,7 @@ import javax.management.remote.JMXConnector
 import cjmx.util.jmx._
 
 
-case class Query(name: Option[ObjectName], query: Option[QueryExp]) extends SimpleConnectedAction {
+case class Query(name: Option[ObjectName], query: Option[QueryExp], projection: Seq[Attribute] => Seq[Attribute] = identity) extends SimpleConnectedAction {
   def act(context: ActionContext, connection: JMXConnector) = {
     val svr = connection.getMBeanServerConnection
     val names = svr.toScala.queryNames(name, query).toList.sorted
@@ -19,7 +19,7 @@ case class Query(name: Option[ObjectName], query: Option[QueryExp]) extends Simp
     names foreach { name =>
       val info = svr.getMBeanInfo(name)
       val attrNames = info.getAttributes map { _.getName }
-      val attrs = svr.attributes(name, attrNames)
+      val attrs = projection(svr.attributes(name, attrNames))
       out <+ name.toString
       out <+ ("-" * name.toString.size)
       out indented {

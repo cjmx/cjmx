@@ -63,6 +63,20 @@ trait JMXFunctions {
     }
   }
 
+  def extractValue(value: AnyRef, names: Seq[String]): Option[AnyRef] = {
+    if (names.isEmpty)
+      Some(value)
+    else value match {
+      case cd: CompositeData =>
+        val nextName = names.head
+        Option(cd.get(nextName)) match {
+          case Some(nv) => extractValue(nv, names.tail)
+          case None => None
+        }
+      case _ => None
+    }
+  }
+
   private val newline = "%n".format()
   private def indentLines(indent: Int)(s: String): String =
     s.split(newline).map { s => (" " * indent) + s }.mkString(newline)
