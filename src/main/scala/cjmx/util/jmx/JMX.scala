@@ -1,5 +1,6 @@
 package cjmx.util.jmx
 
+import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 
 import scalaz._
@@ -63,7 +64,7 @@ trait JMXFunctions {
     }
   }
 
-  def extractValue(value: AnyRef, names: Seq[String]): Option[AnyRef] = {
+  @tailrec final def extractValue(value: AnyRef, names: Seq[String]): Option[AnyRef] = {
     if (names.isEmpty)
       Some(value)
     else value match {
