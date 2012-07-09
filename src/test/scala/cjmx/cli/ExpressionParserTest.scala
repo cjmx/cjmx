@@ -22,7 +22,8 @@ class ExpressionParserTest extends FunSuite with ShouldMatchers {
     "1 / 2 * 2" -> "(* (/ 1 2) 2)",
     "1/2*2" -> "(* (/ 1 2) 2)",
     "1 / (2 * 2)" -> "(/ 1 (* 2 2))",
-    "1/(2*2)" -> "(/ 1 (* 2 2))"
+    "1/(2*2)" -> "(/ 1 (* 2 2))",
+    "1 + 2 / 3 - 4 * 5" -> "(- (+ 1 (/ 2 3)) (* 4 5))"
   )
 
   validExamples foreach { case (ex, expectedOutput) =>
