@@ -139,7 +139,73 @@ class QueryExpParserTest extends FunSuite with ShouldMatchers {
       Query.not(Query.anySubString(Query.attr("Name"), Query.value("X"))),
 
     "sun.management.MemoryImpl#ObjectPendingFinalizationCount > 0" ->
-      Query.gt(Query.attr("sun.management.MemoryImpl", "ObjectPendingFinalizationCount"), Query.value(0))
+      Query.gt(Query.attr("sun.management.MemoryImpl", "ObjectPendingFinalizationCount"), Query.value(0)),
+
+    "A > 0 and B > 0 and C > 0" ->
+      Query.and(
+        Query.and(
+          Query.gt(
+            Query.attr("A"),
+            Query.value(0)
+          ),
+          Query.gt(
+            Query.attr("B"),
+            Query.value(0)
+          )
+        ),
+        Query.gt(
+          Query.attr("C"),
+          Query.value(0)
+        )
+      ),
+
+    "A > 0 and B > 0 or C > 0 and D > 0" ->
+      Query.or(
+        Query.and(
+          Query.gt(
+            Query.attr("A"),
+            Query.value(0)
+          ),
+          Query.gt(
+            Query.attr("B"),
+            Query.value(0)
+          )
+        ),
+        Query.and(
+          Query.gt(
+            Query.attr("C"),
+            Query.value(0)
+          ),
+          Query.gt(
+            Query.attr("D"),
+            Query.value(0)
+          )
+        )
+      ),
+
+    "A > 0 or B > 0 and C > 0 or D > 0" ->
+      Query.or(
+        Query.or(
+          Query.gt(
+            Query.attr("A"),
+            Query.value(0)
+          ),
+          Query.and(
+            Query.gt(
+              Query.attr("B"),
+              Query.value(0)
+            ),
+            Query.gt(
+              Query.attr("C"),
+              Query.value(0)
+            )
+          )
+        ),
+        Query.gt(
+          Query.attr("D"),
+          Query.value(0)
+        )
+      )
   )
 
   validExamples foreach { case (ex, query) =>

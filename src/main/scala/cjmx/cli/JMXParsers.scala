@@ -143,15 +143,15 @@ object JMXParsers {
   private class QueryExpProductions(attributeNames: Set[String]) {
     import javax.management.{Query => Q}
 
-    lazy val Query: Parser[QueryExp] = { for {
-      p <- (AndQuery <~ ws.*)
-      q <- (token("or ") ~> ws.* ~> Query).?
-    } yield q.fold(qq => Q.or(p, qq), p) }
+    lazy val Query: Parser[QueryExp] =
+      (AndQuery ~ (
+        (ws.* ~> token("or ") ~> ws.* ~> AndQuery <~ ws.*) map { q => Q.or(_: QueryExp, q) }
+      ).*) map { case p ~ seq => seq.foldLeft(p) { (acc, q) => q(acc) } }
 
-    lazy val AndQuery: Parser[QueryExp] = for {
-      p <- (Predicate <~ ws.*)
-      q <- (token("and ") ~> ws.* ~> AndQuery).?
-    } yield q.fold(qq => Q.and(p, qq), p)
+    lazy val AndQuery: Parser[QueryExp] =
+      (Predicate ~ (
+        (ws.* ~> token("and ") ~> ws.* ~> Predicate <~ ws.*) map { q => Q.and(_: QueryExp, q) }
+      ).*) map { case p ~ seq => seq.foldLeft(p) { (acc, q) => q(acc) } }
 
     lazy val Not = token("not ") <~ ws.* ^^^ true
 
