@@ -402,20 +402,20 @@ object JMXParsers {
     def LeafValue: Parser[Expression]
 
     lazy val Expr: Parser[Expression] =
-      Term ~ (ws.* ~> (
+      (Term ~
+        (ws.* ~> (
           ("+" ~> ws.* ~> Term map { rhs => add(_: Expression, rhs) }) |
           ("-" ~> ws.* ~> Term map { rhs => subtract(_: Expression, rhs) })
-        ) <~ ws.*).* map { case first ~ sq =>
-        sq.foldLeft(first) { (acc, f) => f(acc) }
-      }
+        ) <~ ws.*).*
+      ) map { case first ~ sq => sq.foldLeft(first) { (acc, f) => f(acc) } }
 
     lazy val Term: Parser[Expression] =
-      Factor ~ (ws.* ~> (
+      (Factor ~
+        (ws.* ~> (
           ("*" ~> ws.* ~> Factor map { rhs => multiply(_: Expression, rhs) }) |
           ("/" ~> ws.* ~> Factor map { rhs => divide(_: Expression, rhs) })
-        ) <~ ws.*).* map { case first ~ sq =>
-        sq.foldLeft(first) { (acc, f) => f(acc) }
-      }
+        ) <~ ws.*).*
+      ) map { case first ~ sq => sq.foldLeft(first) { (acc, f) => f(acc) } }
 
     lazy val Factor: Parser[Expression] = LeafValue | Parenthesized(Expr).examples("(<value>)")
   }
