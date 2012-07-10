@@ -238,7 +238,7 @@ object JMXParsers {
       override def divide(lhs: ValueExp, rhs: ValueExp) = Q.div(lhs, rhs)
       override def add(lhs: ValueExp, rhs: ValueExp) = Q.plus(lhs, rhs)
       override def subtract(lhs: ValueExp, rhs: ValueExp) = Q.minus(lhs, rhs)
-      override lazy val LeafValue = Attribute | Literal
+      override lazy val Value = Attribute | Literal
     }.Expr.examples(Set("<value>", "<attribute>") ++ attributeNames)
 
     lazy val Attribute = (NonQualifiedAttribute | QualifiedAttribute).examples("<attribute>")
@@ -290,7 +290,7 @@ object JMXParsers {
       override def subtract(lhs: Expression, rhs: Expression) = attrs => apply(Ops.Subtraction, attrs, lhs, rhs)
       private lazy val SimpleValue: Parser[Expression] =
         (IntValue | LongValue | DoubleValue) map { v => (attrs: Map[String, AnyRef]) => Option((v.toString, v.asInstanceOf[AnyRef])) }
-      override lazy val LeafValue = SimpleAttribute | SimpleValue
+      override lazy val Value = SimpleAttribute | SimpleValue
 
       private sealed trait Op {
         def name: String
@@ -399,7 +399,7 @@ object JMXParsers {
     def divide(lhs: Expression, rhs: Expression): Expression
     def add(lhs: Expression, rhs: Expression): Expression
     def subtract(lhs: Expression, rhs: Expression): Expression
-    def LeafValue: Parser[Expression]
+    def Value: Parser[Expression]
 
     lazy val Expr: Parser[Expression] =
       (Term ~
@@ -417,6 +417,6 @@ object JMXParsers {
         ) <~ ws.*).*
       ) map { case first ~ sq => sq.foldLeft(first) { (acc, f) => f(acc) } }
 
-    lazy val Factor: Parser[Expression] = LeafValue | Parenthesized(Expr).examples("(<value>)")
+    lazy val Factor: Parser[Expression] = Value | Parenthesized(Expr).examples("(<value>)")
   }
 }

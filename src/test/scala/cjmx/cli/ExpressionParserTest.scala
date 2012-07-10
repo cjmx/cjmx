@@ -39,7 +39,7 @@ class ExpressionParserTest extends FunSuite with ShouldMatchers {
       def divide(lhs: Expression, rhs: Expression) = "(/ %s %s)".format(lhs, rhs)
       def add(lhs: Expression, rhs: Expression) = "(+ %s %s)".format(lhs, rhs)
       def subtract(lhs: Expression, rhs: Expression) = "(- %s %s)".format(lhs, rhs)
-      def LeafValue: Parser[Expression] = Digit.+.string
+      def Value: Parser[Expression] = Digit.+.string
     }.Expr)
 }
 
