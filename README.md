@@ -128,9 +128,19 @@ Connects cjmx to the local Java Virtual Machine with the specified VM ID (as rep
 
 ## Connected Commands
 
+Once cjmx is connected to a JVM, the following actions can be performed to JMX MBeans in the platform MBean server.
+
+ - List MBean names
+ - Inspect MBean information
+ - Query MBean attributes
+ - Invoke MBean operations
+
+Each action has a prefix command and a postfix command.  The postfix form is preferred as it offers better tab completion.  Both forms are documented in the following sections.
+
 ### names
 
-    names 'object-name-pattern' [where query-expression]
+    names ['object-name-pattern' [where query-expression]]
+    mbeans from 'object-name-pattern' [where query-expression] names
 
 Displays the names of all MBeans whose object names match the specified object name pattern.
 
@@ -144,6 +154,7 @@ Examples:
     > names 'java.*:*'
     > names '*:*'
     > names '*:*' where ErrorCount > 0
+    > mbeans from '*:*' where ErrorCount > 0 names
 
 ### Query Expressions
 
