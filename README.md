@@ -135,7 +135,7 @@ Connects cjmx to the local Java Virtual Machine with the specified VM ID (as rep
 Displays the names of all MBeans whose object names match the specified object name pattern.
 
  - object-name-pattern - object name pattern conformant to pattern described in http://docs.oracle.com/javase/7/docs/api/javax/management/ObjectName.html
- - query-expression - expression that limits the MBeans selected.  See [query expression documentation](#Query Expressions)
+ - query-expression - expression that limits the MBeans selected.  See [query expression documentation](#query-expressions)
 
 Examples:
 
