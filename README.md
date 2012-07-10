@@ -16,7 +16,7 @@ Once cjmx starts, a prompt will appear.  Cjmx makes heavy use of tab completion,
 
     java -jar cjmx.jar 1234
     > <TAB>
-    disconnect   exit         inspect      names        query
+    disconnect   exit         inspect      names        select
     > names 'java.<TAB>
     java.lang:           java.util.logging:
     > inspect -d 'java.lang:type=
@@ -56,7 +56,7 @@ Once cjmx starts, a prompt will appear.  Cjmx makes heavy use of tab completion,
           java.management.memory.threshold.exceeded
           java.management.memory.collection.threshold.exceeded
 
-    > query from 'java.lang:type=Memory'
+    > mbeans from 'java.lang:type=Memory' select *
     java.lang:type=Memory
     ---------------------
       Verbose: false
@@ -74,7 +74,7 @@ Once cjmx starts, a prompt will appear.  Cjmx makes heavy use of tab completion,
 
 Alternatively, cjmx can run a series of commands and then terminate.  This is done by specifying each command as a program argument.  For example:
 
-    java -jar cjmx.jar 1234 "inspect 'java.lang:type=Memory'" "query from 'java.lang:type=Memory'"
+    java -jar cjmx.jar 1234 "inspect 'java.lang:type=Memory'" "mbeans from 'java.lang:type=Memory' select *"
     Object name: java.lang:type=Memory
     ----------------------------------
     Description: Information on the management interface of the MBean
@@ -105,4 +105,46 @@ Alternatively, cjmx can run a series of commands and then terminate.  This is do
         init: 24317952
         max: 318767104
         used: 122049448
+
+Commands
+========
+
+Cjmx has two main states -- connected to a JVM and disconnected.  The commands available are sensitive to the current connectivity state.
+
+## Disconnected Commands
+
+### jps
+
+jps takes no aruments and when invoked, prints the VM identifier and description of all locally running JVMs.
+
+### connect
+
+    connect [-q] VMID
+
+Connects cjmx to the local Java Virtual Machine with the specified VM ID (as reported by jps).
+
+ - -q - Disables informational output upon successful connection (useful when scripting)
+ - VMID - virtual machine identifier
+
+## Connected Commands
+
+### names
+
+    names 'object-name-pattern' [where query-expression]
+
+Displays the names of all MBeans whose object names match the specified object name pattern.
+
+ - object-name-pattern - object name pattern conformant to pattern described in http://docs.oracle.com/javase/7/docs/api/javax/management/ObjectName.html
+ - query-expression - expression that limits the MBeans selected.  See [query expression documentation](#Query Expressions)
+
+Examples:
+
+    > names 'java.lang:*'
+    > names 'java.lang:type=Memory,*'
+    > names 'java.*:*'
+    > names '*:*'
+    > names '*:*' where ErrorCount > 0
+
+### Query Expressions
+
 
