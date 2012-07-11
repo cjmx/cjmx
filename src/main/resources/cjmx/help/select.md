@@ -8,18 +8,18 @@ Gets attribute values of MBeans that match the specified object name pattern and
  - query-expression - expression that limits the MBeans selected.  See "help query" for more information.
  - projection - specification of the attribute values to select.  Projections take the following form:
 
-    projection := expression [as 'name'][, expression [as 'name']]*
-    expression :=
-        expression * expression |
-        expression / expression |
-        expression + expression |
-        expression - expression |
-        (expression) |
-        value
-    value := value-ref | literal-value
-    value-ref := name[.name]*
-    name := string | 'string'
-    literal-value := number | true | false | 'string'
+        projection := expression [as 'name'][, expression [as 'name']]*
+        expression :=
+            expression * expression |
+            expression / expression |
+            expression + expression |
+            expression - expression |
+            (expression) |
+            value
+        value := value-ref | literal-value
+        value-ref := name[.name]*
+        name := string | 'string'
+        literal-value := number | true | false | 'string'
 
 Examples:
 
