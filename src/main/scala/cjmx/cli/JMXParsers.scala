@@ -241,7 +241,7 @@ object JMXParsers {
     }.Expr.examples(Set("<value>", "<attribute>") ++ attributeNames)
 
     lazy val Attribute = (NonQualifiedAttribute | QualifiedAttribute).examples("<attribute>")
-    lazy val NonQualifiedAttribute = Identifier map Q.attr
+    lazy val NonQualifiedAttribute = Identifier(DQuoteChar) map Q.attr
     lazy val QualifiedAttribute = (rep1sep(JavaIdentifier, '.') <~ '#') ~ JavaIdentifier map { case clsParts ~ attr => Q.attr(clsParts.mkString("."), attr) }
 
     lazy val Literal = BooleanLiteral | LongLiteral | DoubleLiteral | StringLiteral
@@ -274,7 +274,7 @@ object JMXParsers {
     }
 
     lazy val Attribute: Parser[Map[String, AnyRef] => Option[(String, AnyRef)]] =
-      token(UnnamedAttribute) ~ (token(" as ") ~> Identifier).? map {
+      token(UnnamedAttribute) ~ (token(" as ") ~> Identifier(SQuoteChar, DQuoteChar)).? map {
         case f ~ Some(t) => attrs => f(attrs) map { case (_, v) => (t, v) }
         case f ~ None => f
       }
@@ -326,7 +326,7 @@ object JMXParsers {
     }.Expr.examples(Set("<value>", "<attribute>") ++ attributeNames)
 
     lazy val SimpleAttribute: Parser[Map[String, AnyRef] => Option[(String, AnyRef)]] =
-      (rep1sep(Identifier, '.') map { ids =>
+      (rep1sep(Identifier(SQuoteChar, DQuoteChar), '.') map { ids =>
         attrs => (for {
           hv <- attrs.get(ids.head)
           v <- JMX.extractValue(hv, ids.tail)
@@ -335,7 +335,7 @@ object JMXParsers {
   }
 
   def Invocation(svr: MBeanServerConnection): Parser[(String, Seq[AnyRef])] =
-    Identifier ~ (token("(") ~> repsep(ws.* ~> InvocationParameter(svr), ws.* ~ ',') <~ token(")"))
+    Identifier(SQuoteChar, DQuoteChar) ~ (token("(") ~> repsep(ws.* ~> InvocationParameter(svr), ws.* ~ ',') <~ token(")"))
 
   private def InvocationParameter(svr: MBeanServerConnection): Parser[AnyRef] =
     (BooleanValue map { v => (java.lang.Boolean.valueOf(v): AnyRef) }) |
@@ -352,7 +352,7 @@ object JMXParsers {
   private def ArrayP[A: ClassManifest](p: Parser[A]): Parser[Array[A]] =
     (token("{") ~> repsep(ws.* ~> p, ws.* ~> ',') <~ ws.* <~ token("}")) map { _.toArray }
 
-  private lazy val Identifier = (JavaIdentifier | QuotedIdentifier).examples("identifier")
+  private def Identifier(quotes: Char*) = (JavaIdentifier | QuotedIdentifier(quotes: _*)).examples("identifier")
 
   private lazy val JavaIdentifier: Parser[String] = (
     charClass(c => c.isLetter || c == '_' | c == '$', "letter, underscore, or dollar sign") ~
@@ -361,9 +361,9 @@ object JMXParsers {
     }
   ).examples("identifier")
 
-  private lazy val QuotedIdentifier: Parser[String] = {
-    def QuotedWith(q: Char) = q ~> (charClass(_ != q) | (q ~ q ^^^ q)).* <~ q
-    (QuotedWith(DQuoteChar) | QuotedWith(SQuoteChar)).string.examples("\"identifier\"")
+  private def QuotedIdentifier(quotes: Char*): Parser[String] = {
+    def quotedWith(q: Char) = q ~> (charClass(_ != q) | (q ~ q ^^^ q)).* <~ q
+    (quotes map quotedWith).reduceLeft { _ | _ }.string.examples("\"identifier\"")
   }
 
   private lazy val SQuoteChar = '\''
