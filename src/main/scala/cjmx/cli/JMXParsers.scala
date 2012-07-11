@@ -361,8 +361,12 @@ object JMXParsers {
     }
   ).examples("identifier")
 
-  private lazy val QuotedIdentifier: Parser[String] =
-    (DQuoteChar ~> (charClass(_ != DQuoteChar) | (DQuoteChar ~ DQuoteChar ^^^ DQuoteChar)).* <~ DQuoteChar).string.examples("\"identifier\"")
+  private lazy val QuotedIdentifier: Parser[String] = {
+    def QuotedWith(q: Char) = q ~> (charClass(_ != q) | (q ~ q ^^^ q)).* <~ q
+    (QuotedWith(DQuoteChar) | QuotedWith(SQuoteChar)).string.examples("\"identifier\"")
+  }
+
+  private lazy val SQuoteChar = '\''
 
   private lazy val BooleanValue = ("true" ^^^ true) | ("false" ^^^ false)
 
