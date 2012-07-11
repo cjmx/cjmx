@@ -6,13 +6,13 @@ import scalaz.syntax.validation._
 import javax.management.{ObjectName, QueryExp}
 import javax.management.remote.JMXConnector
 
-import cjmx.util.jmx.JMX
+import cjmx.util.jmx.{JMX, MBeanQuery}
 
 
-case class InspectMBeans(name: Option[ObjectName], query: Option[QueryExp], detailed: Boolean) extends SimpleConnectedAction {
+case class InspectMBeans(query: MBeanQuery, detailed: Boolean) extends SimpleConnectedAction {
   def act(context: ActionContext, connection: JMXConnector) = {
     val svr = connection.getMBeanServerConnection
-    val names = svr.toScala.queryNames(name, query).toList.sorted
+    val names = svr.toScala.queryNames(query).toList.sorted
 
     val out = new OutputBuilder
     val info = names map { name => name -> svr.getMBeanInfo(name) }

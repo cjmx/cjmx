@@ -23,8 +23,8 @@ object REPL {
       state.runState match {
         case Running =>
           val parser = state.connectionState match {
-            case Disconnected => Parsers.disconnected(JMX.localVMs)
-            case Connected(cnx) => Parsers.connected(cnx)
+            case Disconnected => Parsers.Disconnected(JMX.localVMs)
+            case Connected(cnx) => Parsers.Connected(cnx)
           }
           def readLine = reader(parser).readLine("> ").fold(some, some("exit")).filter { _.nonEmpty }
           val result = for {

@@ -1,5 +1,8 @@
 package cjmx.cli
 
+import scala.collection.JavaConverters._
+import scala.collection.JavaConversions.mapAsScalaMap
+
 import sbt.complete.Parser
 import sbt.complete.DefaultParsers._
 
@@ -7,7 +10,6 @@ import scalaz.{Digit => _, _}
 import Scalaz._
 
 import com.sun.tools.attach._
-import scala.collection.JavaConverters._
 
 import javax.management._
 import javax.management.remote.JMXConnector
@@ -15,44 +17,43 @@ import javax.management.remote.JMXConnector
 import MoreParsers._
 
 import cjmx.util.Math.liftToBigDecimal
-import cjmx.util.jmx.JMX
+import cjmx.util.jmx.{JMX, MBeanQuery}
+import cjmx.util.jmx.JMX._
 
 
 object JMXParsers {
   import Parser._
 
-  val QuotedObjectNameParser =
-    (svr: MBeanServerConnection) => token('\'') ~> ObjectNameParser(svr) <~ token('\'')
+  def QuotedObjectNameParser(svr: MBeanServerConnection): Parser[ObjectName] =
+    token('\'') ~> ObjectNameParser(svr) <~ token('\'')
 
-  val ObjectNameParser =
-    (svr: MBeanServerConnection) => for {
+  def ObjectNameParser(svr: MBeanServerConnection): Parser[ObjectName] =
+    for {
       domain <- token(ObjectNameDomainParser(svr).? <~ ':') map { _ getOrElse "" }
       builder <- ObjectNameProductions.Properties(svr, ObjectNameBuilder(domain))
       oname <- builder.oname.fold(e => Parser.failure("invalid object name: " + e), n => Parser.success(n))
     } yield oname
 
-  val ObjectNameDomainParser =
-    (svr: MBeanServerConnection) => (charClass(_ != ':', "object name domain")+).string.examples(svr.getDomains: _*)
+  def ObjectNameDomainParser(svr: MBeanServerConnection): Parser[String] =
+    (charClass(_ != ':', "object name domain")+).string.examples(svr.getDomains: _*)
 
   private object ObjectNameProductions {
 
     def Properties(svr: MBeanServerConnection, soFar: ObjectNameBuilder): Parser[ObjectNameBuilder] =
       Property(svr, soFar) flatMap { p1 => (EOF ^^^ p1) | (',' ~> Properties(svr, p1)) }
 
-    val Property =
-      (svr: MBeanServerConnection, soFar: ObjectNameBuilder) =>
-        (token("*") ^^^ soFar.addPropertyWildcardChar) |
-        PropertyKeyValue(svr, soFar)
+    def Property(svr: MBeanServerConnection, soFar: ObjectNameBuilder): Parser[ObjectNameBuilder] =
+      (token("*") ^^^ soFar.addPropertyWildcardChar) |
+      PropertyKeyValue(svr, soFar)
 
-    val PropertyKeyValue =
-      (svr: MBeanServerConnection, soFar: ObjectNameBuilder) =>
-        for {
-          key <- token(PropertyKey(svr, soFar) <~ '=')
-          value <- token("*" | PropertyValue(svr, soFar, key))
-        } yield soFar.addProperty(key, value)
+    def PropertyKeyValue(svr: MBeanServerConnection, soFar: ObjectNameBuilder): Parser[ObjectNameBuilder] =
+      for {
+        key <- token(PropertyKey(svr, soFar) <~ '=')
+        value <- token("*" | PropertyValue(svr, soFar, key))
+      } yield soFar.addProperty(key, value)
 
-    val PropertyKey =
-      (svr: MBeanServerConnection, soFar: ObjectNameBuilder) => PropertyPart(valuePart = false).flatMap { key =>
+    def PropertyKey(svr: MBeanServerConnection, soFar: ObjectNameBuilder): Parser[String] =
+      PropertyPart(valuePart = false).flatMap { key =>
         if (soFar.properties contains key)
           Parser.failure("duplicate key " + key)
         else
@@ -60,28 +61,27 @@ object JMXParsers {
       }.examples {
         val keys = for {
           nameSoFar <- soFar.addPropertyWildcardChar.oname.toOption.toSet
-          name <- svr.queryNames(nameSoFar, null).asScala
-          (key, value) <- name.getKeyPropertyList |> collection.JavaConversions.mapAsScalaMap
+          name <- svr.toScala.queryNames(Some(nameSoFar), None)
+          (key, value) <- name.getKeyPropertyList |> mapAsScalaMap
           if !soFar.properties.contains(key)
         } yield key
         keys.toSet + "<key>"
       }
 
-    val PropertyValue =
-      (svr: MBeanServerConnection, soFar: ObjectNameBuilder, key: String) =>
-        PropertyPart(valuePart = true).examples {
-          val values = for {
-            nameSoFar <- soFar.addProperty(key, "*").addPropertyWildcardChar.oname.toOption.toSet
-            name <- svr.queryNames(nameSoFar, null).asScala
-            value <- (name.getKeyPropertyList |> collection.JavaConversions.mapAsScalaMap).get(key)
-          } yield value
-          values.toSet + "<value>"
-        }
+    def PropertyValue(svr: MBeanServerConnection, soFar: ObjectNameBuilder, key: String): Parser[String] =
+      PropertyPart(valuePart = true).examples {
+        val values = for {
+          nameSoFar <- soFar.addProperty(key, "*").addPropertyWildcardChar.oname.toOption.toSet
+          name <- svr.toScala.queryNames(Some(nameSoFar), None)
+          value <- (name.getKeyPropertyList |> mapAsScalaMap).get(key)
+        } yield value
+        values.toSet + "<value>"
+      }
 
-    def PropertyPart(valuePart: Boolean) =
+    def PropertyPart(valuePart: Boolean): Parser[String] =
       PropertyPartNonQuoted(valuePart) | PropertyPartQuoted(valuePart)
 
-    def PropertyPartNonQuoted(valuePart: Boolean) =
+    def PropertyPartNonQuoted(valuePart: Boolean): Parser[String] =
       repFlatMap(none[Char]) { lastChar =>
         val p = {
           if (lastChar == Some('\\'))
@@ -94,7 +94,7 @@ object JMXParsers {
         p.map { d => (Some(d), d) }
       }.string
 
-    def PropertyPartQuoted(valuePart: Boolean) =
+    def PropertyPartQuoted(valuePart: Boolean): Parser[String] =
       (DQuoteChar ~> (repFlatMap(none[Char]) { lastChar =>
         val p = {
           if (lastChar == Some('\\'))
@@ -132,8 +132,7 @@ object JMXParsers {
   }
 
 
-
-  lazy val QueryExpParser: (MBeanServerConnection, ObjectName) => Parser[QueryExp] = (svr: MBeanServerConnection, name: ObjectName) => {
+  def QueryExpParser(svr: MBeanServerConnection, name: ObjectName): Parser[QueryExp] = {
     val attributeNames = svr.toScala.queryNames(Some(name), None).flatMap { n =>
       svr.getMBeanInfo(n).getAttributes.map { _.getName }.toSet
     }
@@ -253,13 +252,11 @@ object JMXParsers {
   }
 
 
-  lazy val Projection: (MBeanServerConnection, ObjectName, Option[QueryExp]) => Parser[Seq[Attribute] => Seq[Attribute]] =
-    (svr: MBeanServerConnection, name: ObjectName, query: Option[QueryExp]) => {
-      val attributeNames = svr.toScala.queryNames(Some(name), query).flatMap { n =>
-        svr.getMBeanInfo(n).getAttributes.map { _.getName }.toSet
-      }
-      new ProjectionProductions(attributeNames).Projection
-    }
+  def Projection(svr: MBeanServerConnection, query: Option[MBeanQuery]): Parser[Seq[Attribute] => Seq[Attribute]] = {
+    val getAttributeNames = svr.getMBeanInfo(_: ObjectName).getAttributes.map { _.getName }.toSet
+    val attributeNames = query.fold(q => svr.toScala.queryNames(q).flatMap(getAttributeNames), Set.empty[String])
+    new ProjectionProductions(attributeNames).Projection
+  }
 
   private class ProjectionProductions(attributeNames: Set[String]) {
 
@@ -337,24 +334,20 @@ object JMXParsers {
       })
   }
 
-  lazy val Invocation: MBeanServerConnection => Parser[(String, Seq[AnyRef])] =
-    (svr: MBeanServerConnection) => {
-      Identifier ~ (token("(") ~> repsep(ws.* ~> InvocationParameter(svr), ws.* ~ ',') <~ token(")"))
-    }
+  def Invocation(svr: MBeanServerConnection): Parser[(String, Seq[AnyRef])] =
+    Identifier ~ (token("(") ~> repsep(ws.* ~> InvocationParameter(svr), ws.* ~ ',') <~ token(")"))
 
-  private lazy val InvocationParameter: MBeanServerConnection => Parser[AnyRef] =
-    (svr: MBeanServerConnection) => {
-      (BooleanValue map { v => (java.lang.Boolean.valueOf(v): AnyRef) }) |
-      (IntValue map { v => (java.lang.Integer.valueOf(v): AnyRef) }) |
-      (LongValue map { v => (java.lang.Long.valueOf(v): AnyRef) }) |
-      (DoubleValue map { v => (java.lang.Double.valueOf(v): AnyRef) }) |
-      (StringValue) |
-      ArrayP(BooleanValue) |
-      ArrayP(IntValue) |
-      ArrayP(LongValue) |
-      ArrayP(DoubleValue) |
-      ArrayP(StringValue)
-    }
+  private def InvocationParameter(svr: MBeanServerConnection): Parser[AnyRef] =
+    (BooleanValue map { v => (java.lang.Boolean.valueOf(v): AnyRef) }) |
+    (IntValue map { v => (java.lang.Integer.valueOf(v): AnyRef) }) |
+    (LongValue map { v => (java.lang.Long.valueOf(v): AnyRef) }) |
+    (DoubleValue map { v => (java.lang.Double.valueOf(v): AnyRef) }) |
+    (StringValue) |
+    ArrayP(BooleanValue) |
+    ArrayP(IntValue) |
+    ArrayP(LongValue) |
+    ArrayP(DoubleValue) |
+    ArrayP(StringValue)
 
   private def ArrayP[A: ClassManifest](p: Parser[A]): Parser[Array[A]] =
     (token("{") ~> repsep(ws.* ~> p, ws.* ~> ',') <~ ws.* <~ token("}")) map { _.toArray }

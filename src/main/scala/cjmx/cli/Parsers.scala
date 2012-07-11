@@ -4,7 +4,7 @@ import sbt._
 import sbt.complete.Parser
 import sbt.complete.DefaultParsers._
 
-import scalaz._
+import scalaz.{Digit => _, _}
 import Scalaz._
 
 import com.sun.tools.attach._
@@ -13,88 +13,93 @@ import scala.collection.JavaConverters._
 import javax.management._
 import javax.management.remote.JMXConnector
 
+import cjmx.util.jmx.MBeanQuery
 import JMXParsers._
 
 
 object Parsers {
   import Parser._
 
-  private val list: Parser[Action] =
+  private lazy val GlobalActions: Parser[Action] = exit
+
+  private lazy val Exit: Parser[Action] =
+    (token("exit") | token("done", _ => true)) ^^^ actions.Exit
+
+  def Disconnected(vms: Seq[VirtualMachineDescriptor]): Parser[Action] =
+    ListVMs | Connect(vms) | GlobalActions !!! "Invalid input"
+
+  private val ListVMs: Parser[Action] =
     (token("list") | token("jps")) ^^^ actions.ListVMs
 
-  private val vmid: Seq[VirtualMachineDescriptor] => Parser[String] =
-    (vms: Seq[VirtualMachineDescriptor]) => token(charClass(_.isDigit, "virtual machine id").+.string.examples(vms.map { _.id.toString }: _*))
+  private def VMID(vms: Seq[VirtualMachineDescriptor]): Parser[String] =
+    token(Digit.+.string.examples(vms.map { _.id.toString }: _*))
 
-  private val connect: Seq[VirtualMachineDescriptor] => Parser[actions.Connect] =
-    (vms: Seq[VirtualMachineDescriptor]) => (token("connect" ~> ' ') ~> (token(flag("-q ")) ~ vmid(vms))) map { case quiet ~ vmid => actions.Connect(vmid, quiet) }
+  private def Connect(vms: Seq[VirtualMachineDescriptor]): Parser[actions.Connect] =
+    (token("connect" ~> ' ') ~> (token(flag("-q ")) ~ VMID(vms))) map {
+      case quiet ~ vmid => actions.Connect(vmid, quiet)
+    }
 
-  private val exit: Parser[Action] = (token("exit") | token("done", _ => true)) ^^^ actions.Exit
 
-  private val globalActions = exit
+  def Connected(cnx: JMXConnector): Parser[Action] = {
+    val svr = cnx.getMBeanServerConnection
+    MBeanAction(svr) | PrefixNames(svr) | PrefixInspect(svr) | PrefixSelect(svr) | PrefixInvoke(svr) | Disconnect | GlobalActions !!! "Invalid input"
+  }
 
-  val disconnected =
-    (vms: Seq[VirtualMachineDescriptor]) => list | connect(vms) | globalActions !!! "Invalid input"
-
-  val query =
-    (svr: MBeanServerConnection) => token("query ") ~> token("from ") ~> nameAndQuery(svr) map { case name ~ where => actions.Query(Some(name), where) }
-
-  private val nameAndQuery: MBeanServerConnection => Parser[(ObjectName, Option[QueryExp])] =
-    (svr: MBeanServerConnection) => for {
-      name <- QuotedObjectNameParser(svr)
-      query <- (token(" where ") ~> JMXParsers.QueryExpParser(svr, name)).?
-    } yield (name, query)
-
-  val names =
-    (svr: MBeanServerConnection) =>
-      (token("names") ^^^ actions.ManagedObjectNames(None, None)) |
-      (token("names ") ~> nameAndQuery(svr) map { case name ~ where => actions.ManagedObjectNames(Some(name), where) })
-
-  val inspect =
-    (svr: MBeanServerConnection) =>
-      token("inspect ") ~> (flag("-d ") ~ nameAndQuery(svr)) map { case detailed ~ (name ~ query) => actions.InspectMBeans(Some(name), query, detailed) }
-
-  val invoke =
-    (svr: MBeanServerConnection) =>
-      token("invoke ") ~> JMXParsers.Invocation(svr) ~ (token(" on ") ~> nameAndQuery(svr)) map { case ((opName, args)) ~ (name ~ query) => actions.InvokeOperation(Some(name), query, opName, args) }
-
-  private lazy val mbeanAction =
-    (svr: MBeanServerConnection) => for {
+  private def MBeanAction(svr: MBeanServerConnection): Parser[Action] =
+    for {
       _ <- token("mbeans ")
-      nameAndQuery <- token("from ") ~> nameAndQuery(svr) <~ SpaceClass.*
-      name = nameAndQuery._1
-      query = nameAndQuery._2
-      action <- postfixNames(svr, name, query) | postfixSelect(svr, name, query) | postfixInspect(svr, name, query) | postfixInvoke(svr, name, query)
+      query <- token("from ") ~> MBeanQueryP(svr) <~ SpaceClass.*
+      action <- PostfixNames(svr, query) | PostfixSelect(svr, query) | PostfixInspect(svr, query) | PostfixInvoke(svr, query)
     } yield action
 
-  private lazy val postfixNames =
-    (svr: MBeanServerConnection, name: ObjectName, query: Option[QueryExp]) =>
-      token("names") ^^^ actions.ManagedObjectNames(Some(name), query)
 
-  private lazy val postfixInspect =
-    (svr: MBeanServerConnection, name: ObjectName, query: Option[QueryExp]) =>
-      (token("inspect") ~> flag(" -d")) map {
-        case detailed => actions.InspectMBeans(Some(name), query, detailed)
-      }
+  private def MBeanQueryP(svr: MBeanServerConnection): Parser[MBeanQuery] =
+    for {
+      name <- QuotedObjectNameParser(svr)
+      query <- (token(" where ") ~> JMXParsers.QueryExpParser(svr, name)).?
+    } yield MBeanQuery(Some(name), query)
 
-  private lazy val postfixSelect =
-    (svr: MBeanServerConnection, name: ObjectName, query: Option[QueryExp]) =>
-      (token("select ") ~> SpaceClass.* ~> JMXParsers.Projection(svr, name, query)) map {
-        case projection => actions.Query(Some(name), query, projection)
-      }
+  private def PrefixNames(svr: MBeanServerConnection): Parser[actions.ManagedObjectNames] =
+    (token("names") ^^^ actions.ManagedObjectNames(MBeanQuery.All)) |
+    (token("names ") ~> MBeanQueryP(svr) map { case query => actions.ManagedObjectNames(query) })
 
-  private lazy val postfixInvoke =
-    (svr: MBeanServerConnection, name: ObjectName, query: Option[QueryExp]) =>
-      (token("invoke ") ~> SpaceClass.* ~> JMXParsers.Invocation(svr)) map {
-        case opName ~ args => actions.InvokeOperation(Some(name), query, opName, args)
-      }
+  private def PostfixNames(svr: MBeanServerConnection, query: MBeanQuery): Parser[actions.ManagedObjectNames] =
+    token("names") ^^^ actions.ManagedObjectNames(query)
 
-  val disconnect = token("disconnect") ^^^ actions.Disconnect
-
-  val connected =
-    (cnx: JMXConnector) => {
-      val svr = cnx.getMBeanServerConnection
-      names(svr) | inspect(svr) | query(svr) | invoke(svr) | mbeanAction(svr) | disconnect | globalActions !!! "Invalid input"
+  private def PrefixInspect(svr: MBeanServerConnection): Parser[actions.InspectMBeans] =
+    token("inspect ") ~> (flag("-d ") ~ MBeanQueryP(svr)) map {
+      case detailed ~ query => actions.InspectMBeans(query, detailed)
     }
-}
 
+  private def PostfixInspect(svr: MBeanServerConnection, query: MBeanQuery): Parser[actions.InspectMBeans] =
+    (token("inspect") ~> flag(" -d")) map {
+      case detailed => actions.InspectMBeans(query, detailed)
+    }
+
+  private def PrefixSelect(svr: MBeanServerConnection): Parser[actions.Query] =
+    (SelectClause(svr, None) ~ (token(" from ") ~> MBeanQueryP(svr))) map {
+      case projection ~ query => actions.Query(query, projection)
+    }
+
+  private def PostfixSelect(svr: MBeanServerConnection, query: MBeanQuery): Parser[actions.Query] =
+    SelectClause(svr, Some(query)) map {
+      case projection => actions.Query(query, projection)
+    }
+
+  private def PrefixInvoke(svr: MBeanServerConnection): Parser[actions.InvokeOperation] =
+    token("invoke ") ~> JMXParsers.Invocation(svr) ~ (token(" on ") ~> MBeanQueryP(svr)) map {
+      case ((opName, args)) ~ query => actions.InvokeOperation(query, opName, args)
+    }
+
+  private def PostfixInvoke(svr: MBeanServerConnection, query: MBeanQuery): Parser[actions.InvokeOperation] =
+    (token("invoke ") ~> SpaceClass.* ~> JMXParsers.Invocation(svr)) map {
+      case opName ~ args => actions.InvokeOperation(query, opName, args)
+    }
+
+  private def SelectClause(svr: MBeanServerConnection, query: Option[MBeanQuery]): Parser[Seq[Attribute] => Seq[Attribute]] =
+    (token("select ") ~> SpaceClass.* ~> JMXParsers.Projection(svr, query))
+
+  private lazy val Disconnect: Parser[Action] =
+    token("disconnect") ^^^ actions.Disconnect
+}
 
