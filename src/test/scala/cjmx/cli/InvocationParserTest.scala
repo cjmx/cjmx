@@ -32,6 +32,6 @@ class InvocationParserTest extends FunSuite with ShouldMatchers {
   }
 
   private def parse(str: String): Either[String, (String, Seq[AnyRef])] =
-    Parser.parse(str, JMXParsers.Invocation(ManagementFactory.getPlatformMBeanServer))
+    Parser.parse(str, JMXParsers.Invocation(ManagementFactory.getPlatformMBeanServer, None))
 }
 
