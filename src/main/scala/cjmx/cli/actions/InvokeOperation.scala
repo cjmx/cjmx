@@ -14,31 +14,27 @@ import cjmx.util.jmx._
 case class InvokeOperation(query: MBeanQuery, operationName: String, params: Seq[AnyRef]) extends SimpleConnectedAction {
   def act(context: ActionContext, connection: JMXConnector) = {
     val svr = connection.getMBeanServerConnection
-    val names = svr.toScala.queryNames(query).toList.sorted
-    val out = new OutputBuilder
-    names foreach { name =>
+    val names = svr.toScala.queryNames(query).toSeq.sorted
+    val results = names map { name =>
       val info = svr.getMBeanInfo(name)
       val operationsWithSameName = info.getOperations.toList.filter { _.getName == operationName }
       if (operationsWithSameName.isEmpty) {
-        out <+ "%s: %s".format(name, "no such operation")
+        name -> Left("no such operation")
       } else {
         val operationsWithMatchingSignature = operationsWithSameName filter matchesSignature
-        out <+ "%s: %s".format(name, operationsWithMatchingSignature match {
+        name -> (operationsWithMatchingSignature match {
           case Nil =>
-            "no operation with signature (%s) - valid signatures:%n  %s".format(
+            Left("no operation with signature (%s) - valid signatures:%n  %s".format(
               params.map { _.getClass.getSimpleName }.mkString(", "),
-              operationsWithSameName.map(showSignatures).mkString("%n  ".format())
-            )
+              operationsWithSameName.map(showSignatures).mkString("%n  ".format())))
           case op :: Nil =>
-            try JMXTags.Value(svr.invoke(name, operationName, params.toArray, op.getSignature.map { _.getType })).shows
-            catch {
-              case e: Exception => e.getMessage
-            }
-          case other => "ambiguous signature"
+            Right(JMXTags.Value(svr.invoke(name, operationName, params.toArray, op.getSignature.map { _.getType })).shows)
+          case other =>
+            Left("ambiguous signature")
         })
       }
     }
-    out.lines.success
+    context.formatter.formatInvocationResults(results).success
   }
 
   private def matchesSignature(op: MBeanOperationInfo): Boolean =  {

@@ -19,17 +19,25 @@ trait ActionContext {
 
   def connected(connection: JMXConnector): ActionContext
   def disconnected: ActionContext
+
+  def formatter: MessageFormatter
+  def withFormatter(fmt: MessageFormatter): ActionContext
 }
 
 object ActionContext {
-  private case class DefaultActionContext(runState: RunState, connectionState: ConnectionState) extends ActionContext {
+  private case class DefaultActionContext(
+    runState: RunState,
+    connectionState: ConnectionState,
+    formatter: MessageFormatter
+  ) extends ActionContext {
     override def withRunState(rs: RunState) = copy(runState = rs)
     override def exit(statusCode: Int) = withRunState(Exit(statusCode))
     override def connected(connection: JMXConnector) = copy(connectionState = Connected(connection))
     override def disconnected = copy(connectionState = Disconnected)
+    override def withFormatter(fmt: MessageFormatter) = copy(formatter = fmt)
   }
 
-  def apply(runState: RunState = Running, connectionState: ConnectionState = Disconnected): ActionContext =
-    DefaultActionContext(runState, connectionState)
+  def apply(runState: RunState = Running, connectionState: ConnectionState = Disconnected, formatter: MessageFormatter = TextMessageFormatter): ActionContext =
+    DefaultActionContext(runState, connectionState, formatter)
 }
 

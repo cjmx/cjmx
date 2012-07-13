@@ -15,11 +15,12 @@ package object cli extends JMX {
   type Action = ActionContext => ActionResult
 
   def enumMessageList(msgs: List[String]): EnumeratorT[String, IO] = EnumeratorT.enumList[String, IO](msgs)
+  def enumMessageSeq(msgs: Seq[String]): EnumeratorT[String, IO] = enumMessageList(msgs.toList)
   def enumMessages(msgs: String*): EnumeratorT[String, IO] = enumMessageList(msgs.toList)
 
   trait SimpleAction extends Action {
-    final def apply(context: ActionContext) = act(context) map { msgs => (context, enumMessageList(msgs)) }
-    def act(context: ActionContext): ValidationNEL[String, List[String]]
+    final def apply(context: ActionContext) = act(context) map { msgs => (context, enumMessageSeq(msgs)) }
+    def act(context: ActionContext): ValidationNEL[String, Seq[String]]
   }
 
   trait ConnectedAction extends Action {
@@ -30,8 +31,8 @@ package object cli extends JMX {
 
   trait SimpleConnectedAction extends ConnectedAction {
     final def applyConnected(context: ActionContext, connection: JMXConnector) =
-      act(context, connection) map { msgs => (context, enumMessageList(msgs)) }
-    def act(context: ActionContext, connection: JMXConnector): ValidationNEL[String, List[String]]
+      act(context, connection) map { msgs => (context, enumMessageSeq(msgs)) }
+    def act(context: ActionContext, connection: JMXConnector): ValidationNEL[String, Seq[String]]
   }
 
   final object NoopAction extends Action {

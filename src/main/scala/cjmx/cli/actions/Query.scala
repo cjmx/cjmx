@@ -15,19 +15,12 @@ case class Query(query: MBeanQuery, projection: Seq[Attribute] => Seq[Attribute]
   def act(context: ActionContext, connection: JMXConnector) = {
     val svr = connection.getMBeanServerConnection
     val names = svr.toScala.queryNames(query).toList.sorted
-    val out = new OutputBuilder
-    names foreach { name =>
+    val namesAndAttrs = names map { name =>
       val info = svr.getMBeanInfo(name)
       val attrNames = info.getAttributes map { _.getName }
-      val attrs = projection(svr.attributes(name, attrNames))
-      out <+ name.toString
-      out <+ ("-" * name.toString.size)
-      out indented {
-        attrs foreach { attr => out <+ attr.shows }
-      }
-      out <+ ""
+      name -> projection(svr.attributes(name, attrNames))
     }
-    out.lines.success
+    context.formatter.formatAttributes(namesAndAttrs).success
   }
 }
 

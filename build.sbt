@@ -22,6 +22,7 @@ libraryDependencies ++=
   "org.scalaz" %% "scalaz-effect" % "7.0-SNAPSHOT" ::
   "org.scalaz" %% "scalaz-iteratee" % "7.0-SNAPSHOT" ::
   "org.scala-sbt" % "completion" % "0.12.0-RC2" ::
+  "com.google.code.gson" % "gson" % "2.2.2" ::
   "org.scalatest" % "scalatest_2.9.0" % "1.8" % "test" ::
   Nil
 

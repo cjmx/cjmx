@@ -20,13 +20,16 @@ import JMXParsers._
 object Parsers {
   import Parser._
 
-  private lazy val GlobalActions: Parser[Action] = Exit | Help
+  private lazy val GlobalActions: Parser[Action] = Exit | Help | SetFormat
 
   private lazy val Exit: Parser[Action] =
     (token("exit") | token("done", _ => true)) ^^^ actions.Exit
 
   private lazy val Help: Parser[Action] =
     (token("help") ~> (' ' ~> any.+.string).?) map { topic => actions.Help(topic) }
+
+  private lazy val SetFormat: Parser[Action] =
+    token("format ") ~> (("text" ^^^ TextMessageFormatter) | "json" ^^^ JsonMessageFormatter) map actions.SetFormat
 
   def Disconnected(vms: Seq[VirtualMachineDescriptor]): Parser[Action] =
     ListVMs | Connect(vms) | GlobalActions !!! "Invalid input"
