@@ -347,7 +347,7 @@ object JMXParsers {
     Identifier(SQuoteChar, DQuoteChar).examples(ops + "<operation name>")
   }
 
-  private def InvocationParameter(svr: MBeanServerConnection): Parser[AnyRef] =
+  private def InvocationParameter(svr: MBeanServerConnection): Parser[AnyRef] = {
     (BooleanValue map { v => (java.lang.Boolean.valueOf(v): AnyRef) }) |
     (IntValue map { v => (java.lang.Integer.valueOf(v): AnyRef) }) |
     (LongValue map { v => (java.lang.Long.valueOf(v): AnyRef) }) |
@@ -358,6 +358,7 @@ object JMXParsers {
     ArrayP(LongValue) |
     ArrayP(DoubleValue) |
     ArrayP(StringValue)
+  }.examples("<value>")
 
   private def ArrayP[A: ClassManifest](p: Parser[A]): Parser[Array[A]] =
     (token("{") ~> repsep(ws.* ~> p, ws.* ~> ',') <~ ws.* <~ token("}")) map { _.toArray }
