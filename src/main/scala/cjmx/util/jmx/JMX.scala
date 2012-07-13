@@ -49,6 +49,7 @@ trait JMXFunctions {
 
   def typeToClass(cl: ClassLoader)(t: String): Option[Class[_]] = {
     t match {
+      case "boolean" => Some(classOf[java.lang.Boolean])
       case "byte" => Some(classOf[java.lang.Byte])
       case "char" => Some(classOf[java.lang.Character])
       case "short" => Some(classOf[java.lang.Short])

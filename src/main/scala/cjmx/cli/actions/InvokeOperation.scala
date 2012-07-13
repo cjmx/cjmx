@@ -28,9 +28,14 @@ case class InvokeOperation(query: MBeanQuery, operationName: String, params: Seq
               params.map { _.getClass.getSimpleName }.mkString(", "),
               operationsWithSameName.map(showSignatures).mkString("%n  ".format())))
           case op :: Nil =>
-            Right(JMXTags.Value(svr.invoke(name, operationName, params.toArray, op.getSignature.map { _.getType })).shows)
+            try Right(JMXTags.Value(svr.invoke(name, operationName, params.toArray, op.getSignature.map { _.getType })).shows)
+            catch {
+              case e: Exception =>
+                Left("Exception: " + e.getMessage)
+            }
           case other =>
-            Left("ambiguous signature")
+            Left("ambiguous signatures:%n  %s".format(
+              other.map(showSignatures).mkString("%n  ".format())))
         })
       }
     }
