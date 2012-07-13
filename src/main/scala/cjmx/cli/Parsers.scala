@@ -93,12 +93,12 @@ object Parsers {
     }
 
   private def PrefixInvoke(svr: MBeanServerConnection): Parser[actions.InvokeOperation] =
-    token("invoke ") ~> JMXParsers.Invocation(svr) ~ (token(" on ") ~> MBeanQueryP(svr)) map {
+    token("invoke ") ~> JMXParsers.Invocation(svr, None) ~ (token(" on ") ~> MBeanQueryP(svr)) map {
       case ((opName, args)) ~ query => actions.InvokeOperation(query, opName, args)
     }
 
   private def PostfixInvoke(svr: MBeanServerConnection, query: MBeanQuery): Parser[actions.InvokeOperation] =
-    (token("invoke ") ~> SpaceClass.* ~> JMXParsers.Invocation(svr)) map {
+    (token("invoke ") ~> SpaceClass.* ~> JMXParsers.Invocation(svr, Some(query))) map {
       case opName ~ args => actions.InvokeOperation(query, opName, args)
     }
 

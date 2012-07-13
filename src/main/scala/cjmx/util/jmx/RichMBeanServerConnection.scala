@@ -17,6 +17,9 @@ trait RichMBeanServerConnection extends Ops[MBeanServerConnection] {
   def queryNames(query: MBeanQuery): Set[ObjectName] =
     queryNames(query.from, query.where)
 
+  def mbeanInfo(name: ObjectName): Option[MBeanInfo] =
+    Option(self.getMBeanInfo(name))
+
   def attributes(name: ObjectName, attributeNames: Array[String]): Seq[Attribute] =
     self.getAttributes(name, attributeNames).asScala.toSeq.asInstanceOf[Seq[Attribute]]
 }

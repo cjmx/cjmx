@@ -334,8 +334,18 @@ object JMXParsers {
       })
   }
 
-  def Invocation(svr: MBeanServerConnection): Parser[(String, Seq[AnyRef])] =
-    Identifier(SQuoteChar, DQuoteChar) ~ (token("(") ~> repsep(ws.* ~> InvocationParameter(svr), ws.* ~ ',') <~ token(")"))
+  def Invocation(svr: MBeanServerConnection, query: Option[MBeanQuery]): Parser[(String, Seq[AnyRef])] =
+    OperationName(svr, query) ~ (token("(") ~> repsep(ws.* ~> InvocationParameter(svr), ws.* ~ ',') <~ token(")"))
+
+  private def OperationName(svr: MBeanServerConnection, query: Option[MBeanQuery]): Parser[String] = {
+    val ops: Set[String] = for {
+      q <- query.toSet
+      n <- svr.queryNames(q)
+      i <- svr.mbeanInfo(n).toSet
+      o <- i.getOperations
+    } yield o.getName
+    Identifier(SQuoteChar, DQuoteChar).examples(ops + "<operation name>")
+  }
 
   private def InvocationParameter(svr: MBeanServerConnection): Parser[AnyRef] =
     (BooleanValue map { v => (java.lang.Boolean.valueOf(v): AnyRef) }) |
