@@ -48,14 +48,14 @@ object Parsers {
 
   def Connected(cnx: JMXConnector): Parser[Action] = {
     val svr = cnx.getMBeanServerConnection
-    MBeanAction(svr) | PrefixNames(svr) | PrefixInspect(svr) | PrefixSelect(svr) | PrefixInvoke(svr) | Disconnect | GlobalActions !!! "Invalid input"
+    MBeanAction(svr) | PrefixNames(svr) | PrefixDescribe(svr) | PrefixSelect(svr) | PrefixInvoke(svr) | Disconnect | GlobalActions !!! "Invalid input"
   }
 
   private def MBeanAction(svr: MBeanServerConnection): Parser[Action] =
     for {
       _ <- token("mbeans ")
-      query <- token("from ") ~> MBeanQueryP(svr) <~ SpaceClass.*
-      action <- PostfixNames(svr, query) | PostfixSelect(svr, query) | PostfixInspect(svr, query) | PostfixInvoke(svr, query)
+      query <- MBeanQueryP(svr) <~ SpaceClass.*
+      action <- PostfixNames(svr, query) | PostfixSelect(svr, query) | PostfixDescribe(svr, query) | PostfixInvoke(svr, query)
     } yield action
 
 
@@ -72,14 +72,14 @@ object Parsers {
   private def PostfixNames(svr: MBeanServerConnection, query: MBeanQuery): Parser[actions.ManagedObjectNames] =
     token("names") ^^^ actions.ManagedObjectNames(query)
 
-  private def PrefixInspect(svr: MBeanServerConnection): Parser[actions.InspectMBeans] =
-    token("inspect ") ~> (flag("-d ") ~ MBeanQueryP(svr)) map {
-      case detailed ~ query => actions.InspectMBeans(query, detailed)
+  private def PrefixDescribe(svr: MBeanServerConnection): Parser[actions.DescribeMBeans] =
+    token("describe ") ~> (flag("-d ") ~ MBeanQueryP(svr)) map {
+      case detailed ~ query => actions.DescribeMBeans(query, detailed)
     }
 
-  private def PostfixInspect(svr: MBeanServerConnection, query: MBeanQuery): Parser[actions.InspectMBeans] =
-    (token("inspect") ~> flag(" -d")) map {
-      case detailed => actions.InspectMBeans(query, detailed)
+  private def PostfixDescribe(svr: MBeanServerConnection, query: MBeanQuery): Parser[actions.DescribeMBeans] =
+    (token("describe") ~> flag(" -d")) map {
+      case detailed => actions.DescribeMBeans(query, detailed)
     }
 
   private def PrefixSelect(svr: MBeanServerConnection): Parser[actions.Query] =

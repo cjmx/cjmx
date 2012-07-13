@@ -4,6 +4,7 @@ Cjmx has two main states -- connected to a JVM and disconnected.  The commands a
 ## Global Commands
 
  - help [topic] - Gets help for the specified topic
+ - format - Changes the output format of commands
  - exit - Exits cjmx
 
 ## Disconnected Commands
@@ -18,7 +19,7 @@ When cjmx is not connected to a JVM, the following commands are available:
 Once cjmx is connected to a JVM, the following commands are available:
 
  - names - List MBean names
- - inspect - Inspect MBean information
+ - describe - Describe MBean information
  - select - Get MBean attributes
  - invoke - Invoke MBean operations
 

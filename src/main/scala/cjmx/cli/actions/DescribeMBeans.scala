@@ -9,7 +9,7 @@ import javax.management.remote.JMXConnector
 import cjmx.util.jmx.{JMX, MBeanQuery}
 
 
-case class InspectMBeans(query: MBeanQuery, detailed: Boolean) extends SimpleConnectedAction {
+case class DescribeMBeans(query: MBeanQuery, detailed: Boolean) extends SimpleConnectedAction {
   def act(context: ActionContext, connection: JMXConnector) = {
     val svr = connection.getMBeanServerConnection
     val names = svr.toScala.queryNames(query).toList.sorted
