@@ -3,7 +3,6 @@ package actions
 
 import scala.collection.JavaConverters._
 import scalaz.syntax.show._
-import scalaz.syntax.validation._
 
 import javax.management.{Attribute, ObjectName, QueryExp}
 import javax.management.remote.JMXConnector
@@ -20,7 +19,7 @@ case class Query(query: MBeanQuery, projection: Seq[Attribute] => Seq[Attribute]
       val attrNames = info.getAttributes map { _.getName }
       name -> projection(svr.attributes(name, attrNames))
     }
-    context.formatter.formatAttributes(namesAndAttrs).success
+    context.formatter.formatAttributes(namesAndAttrs)
   }
 }
 

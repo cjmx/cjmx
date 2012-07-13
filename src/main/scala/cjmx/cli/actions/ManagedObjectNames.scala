@@ -12,7 +12,7 @@ import cjmx.util.jmx.MBeanQuery
 case class ManagedObjectNames(query: MBeanQuery) extends SimpleConnectedAction {
   def act(context: ActionContext, connection: JMXConnector) = {
     val names = connection.getMBeanServerConnection.toScala.queryNames(query).toList.sorted
-    context.formatter.formatNames(names).success
+    context.formatter.formatNames(names)
   }
 }
 

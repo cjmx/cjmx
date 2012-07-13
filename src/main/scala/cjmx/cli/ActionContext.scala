@@ -22,22 +22,27 @@ trait ActionContext {
 
   def formatter: MessageFormatter
   def withFormatter(fmt: MessageFormatter): ActionContext
+
+  def lastStatusCode: Int
+  def withStatusCode(statusCode: Int): ActionContext
 }
 
 object ActionContext {
   private case class DefaultActionContext(
     runState: RunState,
     connectionState: ConnectionState,
-    formatter: MessageFormatter
+    formatter: MessageFormatter,
+    lastStatusCode: Int
   ) extends ActionContext {
     override def withRunState(rs: RunState) = copy(runState = rs)
     override def exit(statusCode: Int) = withRunState(Exit(statusCode))
     override def connected(connection: JMXConnector) = copy(connectionState = Connected(connection))
     override def disconnected = copy(connectionState = Disconnected)
     override def withFormatter(fmt: MessageFormatter) = copy(formatter = fmt)
+    override def withStatusCode(statusCode: Int) = copy(lastStatusCode = statusCode)
   }
 
-  def apply(runState: RunState = Running, connectionState: ConnectionState = Disconnected, formatter: MessageFormatter = TextMessageFormatter): ActionContext =
-    DefaultActionContext(runState, connectionState, formatter)
+  def apply(runState: RunState = Running, connectionState: ConnectionState = Disconnected, formatter: MessageFormatter = TextMessageFormatter, statusCode: Int = 0): ActionContext =
+    DefaultActionContext(runState, connectionState, formatter, statusCode)
 }
 

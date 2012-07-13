@@ -2,7 +2,7 @@ package cjmx.cli
 package actions
 
 import scalaz._
-import scalaz.syntax.validation._
+import scalaz.iteratee.EnumeratorT.enumOne
 
 import cjmx.util.jmx.Attach
 
@@ -17,9 +17,9 @@ case class Connect(vmid: String, quiet: Boolean) extends Action {
           "Connection id: %s".format(cnx.getConnectionId),
           "Default domain: %s".format(server.getDefaultDomain),
           "%d domains registered consisting of %d total MBeans".format(server.getDomains.length, server.getMBeanCount)
-        ))).success
+        )))
       case Failure(err) =>
-        NonEmptyList(err).fail
+        (context.withStatusCode(1), enumOne(err))
     }
   }
 }

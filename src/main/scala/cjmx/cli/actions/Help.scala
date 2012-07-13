@@ -17,12 +17,13 @@ case class Help(topic: Option[String]) extends Action {
   def apply(context: ActionContext) = {
     val resourceName = "/cjmx/help/%s.md".format(topic | "help")
     val resource = Option(getClass.getResourceAsStream(resourceName))
-    val vResource = resource.toSuccess("No help for %s".format(topic | "")).toValidationNel
-    for {
-      resource <- vResource
-      reader = new BufferedReader(new InputStreamReader(resource))
-    } yield (context, enumIgnoringIoExceptions(enumLines[IO](reader)))
+    val vResource = resource.toSuccess("No help for %s".format(topic | ""))
+    vResource match {
+      case Success(resource) =>
+        (context.withStatusCode(0), enumIgnoringIoExceptions(enumLines(new BufferedReader(new InputStreamReader(resource)))))
+      case Failure(err) =>
+        (context.withStatusCode(1), enumOne(err))
+    }
   }
-
 }
 

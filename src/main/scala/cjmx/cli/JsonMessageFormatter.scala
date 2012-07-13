@@ -18,7 +18,8 @@ object JsonMessageFormatter extends MessageFormatter {
     registerTypeAdapter(classOf[ObjectName], ObjectNameSerializer).
     registerTypeAdapter(classOf[NameAndAttributeValues], NameAndAttributeValuesSerializer).
     registerTypeAdapter(classOf[Attribute], AttributeSerializer).
-    registerTypeAdapter(classOf[CompositeDataSupport], CompositeDataSerializer).
+    registerTypeHierarchyAdapter(classOf[CompositeData], CompositeDataSerializer).
+    registerTypeHierarchyAdapter(classOf[InvocationResult], InvocationResultSerializer).
     serializeNulls.
     setDateFormat(DateFormat.LONG).
     setFieldNamingPolicy(FieldNamingPolicy.UPPER_CAMEL_CASE).
@@ -42,8 +43,8 @@ object JsonMessageFormatter extends MessageFormatter {
     toJson(toLinkedHashMap(info))
   }
 
-  override def formatInvocationResults(namesAndResults: Seq[(ObjectName, Either[String, AnyRef])]) = {
-    toJson(toLinkedHashMap(namesAndResults map { case (n, e) => n -> e.fold(identity, identity) }))
+  override def formatInvocationResults(namesAndResults: Seq[(ObjectName, InvocationResult)]) = {
+    toJson(toLinkedHashMap(namesAndResults))
   }
 
   private object ObjectNameSerializer extends JsonSerializer[ObjectName] {
@@ -75,6 +76,19 @@ object JsonMessageFormatter extends MessageFormatter {
       val keys = src.getCompositeType.keySet.asScala.toSeq.sorted
       val keysAndValues = keys zip src.getAll(keys.toArray).toSeq
       context.serialize(toLinkedHashMap(keysAndValues))
+    }
+  }
+
+  private object InvocationResultSerializer extends JsonSerializer[InvocationResult] {
+    override def serialize(src: InvocationResult, typeOfSrc: Type, context: JsonSerializationContext) = {
+      val obj = new JsonObject
+      val (successful, result) = src match {
+        case InvocationResults.Succeeded(value) => (true, value)
+        case other => (false, other.toString)
+      }
+      obj.addProperty("successful", successful)
+      obj.add("result", context.serialize(result))
+      obj
     }
   }
 }

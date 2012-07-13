@@ -31,8 +31,7 @@ object REPL {
             line <- readLine.success[NonEmptyList[String]]
             parse = (line: String) => Validation.fromEither(Parser.parse(line, parser)).toValidationNel
             action <- line.fold(parse, NoopAction.success)
-            result <- action(state)
-          } yield result
+          } yield action(state)
           val newState = result match {
             case Success((newState, msgs)) =>
               (putStrTo[String](out) %= Iteratee.map((_: String) + "%n".format()) &= msgs).run.unsafePerformIO

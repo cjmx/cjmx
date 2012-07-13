@@ -11,35 +11,36 @@ import javax.management.remote.JMXConnector
 import cjmx.util.jmx._
 
 
-case class InvokeOperation(query: MBeanQuery, operationName: String, params: Seq[AnyRef]) extends SimpleConnectedAction {
-  def act(context: ActionContext, connection: JMXConnector) = {
+case class InvokeOperation(query: MBeanQuery, operationName: String, params: Seq[AnyRef]) extends ConnectedAction {
+  def applyConnected(context: ActionContext, connection: JMXConnector) = {
     val svr = connection.getMBeanServerConnection
     val names = svr.toScala.queryNames(query).toSeq.sorted
     val results = names map { name =>
       val info = svr.getMBeanInfo(name)
       val operationsWithSameName = info.getOperations.toList.filter { _.getName == operationName }
       if (operationsWithSameName.isEmpty) {
-        name -> Left("no such operation")
+        name -> InvocationResults.NoSuchOperation
       } else {
         val operationsWithMatchingSignature = operationsWithSameName filter matchesSignature
         name -> (operationsWithMatchingSignature match {
           case Nil =>
-            Left("no operation with signature (%s) - valid signatures:%n  %s".format(
-              params.map { _.getClass.getSimpleName }.mkString(", "),
-              operationsWithSameName.map(showSignatures).mkString("%n  ".format())))
+            InvocationResults.NoOperationWithSignature(
+              signature = params.map { _.getClass },
+              validSignatures = operationsWithSameName.map(showSignatures))
           case op :: Nil =>
-            try Right(JMXTags.Value(svr.invoke(name, operationName, params.toArray, op.getSignature.map { _.getType })).shows)
+            try InvocationResults.Succeeded(svr.invoke(name, operationName, params.toArray, op.getSignature.map { _.getType }))
             catch {
               case e: Exception =>
-                Left("Exception: " + e.getMessage)
+                InvocationResults.Failed(e)
             }
           case other =>
-            Left("ambiguous signatures:%n  %s".format(
-              other.map(showSignatures).mkString("%n  ".format())))
+            InvocationResults.AmbiguousSignature(other.map(showSignatures))
         })
       }
     }
-    context.formatter.formatInvocationResults(results).success
+    val msgs = context.formatter.formatInvocationResults(results)
+    val sc = results.foldLeft(0) { case (acc, (name, res)) => acc max toStatusCode(res) }
+    (context.withStatusCode(sc), enumMessageSeq(msgs))
   }
 
   private def matchesSignature(op: MBeanOperationInfo): Boolean =  {
@@ -55,5 +56,13 @@ case class InvokeOperation(query: MBeanQuery, operationName: String, params: Seq
 
   private def showSignatures(op: MBeanOperationInfo): String =
     op.getSignature.map { t => JMXTags.Type(t.getType).shows }.mkString("(", ", ", ")")
+
+  private def toStatusCode(res: InvocationResult) = res match {
+    case _: InvocationResults.Succeeded => 0
+    case InvocationResults.NoSuchOperation => 1
+    case _: InvocationResults.AmbiguousSignature => 2
+    case _: InvocationResults.NoOperationWithSignature => 3
+    case _: InvocationResults.Failed => 4
+  }
 }
 

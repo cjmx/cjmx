@@ -88,12 +88,8 @@ object TextMessageFormatter extends MessageFormatter {
     out.lines
   }
 
-  override def formatInvocationResults(namesAndResults: Seq[(ObjectName, Either[String, AnyRef])]) = {
-    val out = new OutputBuilder
-    namesAndResults foreach { case (name, result) =>
-      out <+ "%s: %s".format(name, result.fold(identity, v => JMXTags.Value(v).shows))
-    }
-    out.lines
+  override def formatInvocationResults(namesAndResults: Seq[(ObjectName, InvocationResult)]) = {
+    namesAndResults map { case (name, result) => "%s: %s".format(name, result) }
   }
 }
 
