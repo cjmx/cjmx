@@ -51,14 +51,14 @@ object Parsers {
 
   def Connected(cnx: JMXConnector): Parser[Action] = {
     val svr = cnx.getMBeanServerConnection
-    MBeanAction(svr) | PrefixNames(svr) | PrefixDescribe(svr) | PrefixSelect(svr) | PrefixInvoke(svr) | Disconnect | GlobalActions !!! "Invalid input"
+    MBeanAction(svr) | PrefixNames(svr) | PrefixDescribe(svr) | PrefixSelect(svr) | PrefixSample(svr) | PrefixInvoke(svr) | Disconnect | GlobalActions !!! "Invalid input"
   }
 
   private def MBeanAction(svr: MBeanServerConnection): Parser[Action] =
     for {
       _ <- token("mbeans ")
       query <- MBeanQueryP(svr) <~ SpaceClass.*
-      action <- PostfixNames(svr, query) | PostfixSelect(svr, query) | PostfixDescribe(svr, query) | PostfixInvoke(svr, query)
+      action <- PostfixNames(svr, query) | PostfixSelect(svr, query) | PostfixSample(svr, query) | PostfixDescribe(svr, query) | PostfixInvoke(svr, query)
     } yield action
 
 
@@ -95,6 +95,25 @@ object Parsers {
       case projection => actions.Query(query, projection)
     }
 
+  private def SelectClause(svr: MBeanServerConnection, query: Option[MBeanQuery]): Parser[Seq[Attribute] => Seq[Attribute]] =
+    (token("select ") ~> SpaceClass.* ~> JMXParsers.Projection(svr, query))
+
+  private def PrefixSample(svr: MBeanServerConnection): Parser[actions.Sample] =
+    (SampleClause(svr, None) ~ (token(" from ") ~> MBeanQueryP(svr)) ~ SampleTimingClause) map {
+      case projection ~ query ~ timing => actions.Sample(actions.Query(query, projection), timing._1, timing._2)
+    }
+
+  private def PostfixSample(svr: MBeanServerConnection, query: MBeanQuery): Parser[actions.Sample] =
+    (SampleClause(svr, Some(query)) ~ SampleTimingClause) map {
+      case projection ~ timing => actions.Sample(actions.Query(query, projection), timing._1, timing._2)
+    }
+
+  private def SampleClause(svr: MBeanServerConnection, query: Option[MBeanQuery]): Parser[Seq[Attribute] => Seq[Attribute]] =
+    (token("sample ") ~> SpaceClass.* ~> JMXParsers.Projection(svr, query))
+
+  private def SampleTimingClause: Parser[(Int, Int)] =
+    ((" every " ~> NatBasic <~ " second" <~ 's'.?).??(1) ~ (" for " ~> NatBasic <~ " second" <~ 's'.?).??(Int.MaxValue))
+
   private def PrefixInvoke(svr: MBeanServerConnection): Parser[actions.InvokeOperation] =
     token("invoke ") ~> JMXParsers.Invocation(svr, None) ~ (token(" on ") ~> MBeanQueryP(svr)) map {
       case ((opName, args)) ~ query => actions.InvokeOperation(query, opName, args)
@@ -104,9 +123,6 @@ object Parsers {
     (token("invoke ") ~> SpaceClass.* ~> JMXParsers.Invocation(svr, Some(query))) map {
       case opName ~ args => actions.InvokeOperation(query, opName, args)
     }
-
-  private def SelectClause(svr: MBeanServerConnection, query: Option[MBeanQuery]): Parser[Seq[Attribute] => Seq[Attribute]] =
-    (token("select ") ~> SpaceClass.* ~> JMXParsers.Projection(svr, query))
 
   private lazy val Disconnect: Parser[Action] =
     token("disconnect") ^^^ actions.Disconnect
