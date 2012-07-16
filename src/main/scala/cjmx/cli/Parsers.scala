@@ -112,7 +112,7 @@ object Parsers {
     (token("sample ") ~> SpaceClass.* ~> JMXParsers.Projection(svr, query))
 
   private def SampleTimingClause: Parser[(Int, Int)] =
-    ((" every " ~> NatBasic <~ " second" <~ 's'.?).??(1) ~ (" for " ~> NatBasic <~ " second" <~ 's'.?).??(Int.MaxValue))
+    ((token(" every ") ~> NatBasic <~ token(" second" <~ 's'.?)).??(1) ~ (token(" for ") ~> NatBasic <~ token(" second" <~ 's'.?)).??(Int.MaxValue))
 
   private def PrefixInvoke(svr: MBeanServerConnection): Parser[actions.InvokeOperation] =
     token("invoke ") ~> JMXParsers.Invocation(svr, None) ~ (token(" on ") ~> MBeanQueryP(svr)) map {
