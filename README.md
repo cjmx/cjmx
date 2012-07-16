@@ -8,6 +8,10 @@ Usage
 
 Launching cjmx is done via:
 
+    java -cp $JAVA_HOME/lib/tools.jar:cjmx.jar cjmx.Main [PID]
+
+Or, if tools.jar is on the classpath already (e.g., Apple JVM):
+
     java -jar cjmx.jar [PID]
 
 If a PID is specified on the command line, cjmx will attempt to connect to the local JVM with that PID; otherwise, cjmx starts in a disconnected state.
@@ -105,4 +109,6 @@ Alternatively, cjmx can run a series of commands and then terminate.  This is do
         init: 24317952
         max: 318767104
         used: 122049448
+
+All commands have help information available by typing "help" in the console.
 
