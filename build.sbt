@@ -6,6 +6,8 @@ version := "1.0"
 
 scalaVersion := "2.9.2"
 
+scalacOptions += "-deprecation"
+
 licenses += ("Three-clause BSD-style license", url("http://github.com/mpilquist/cjmx/blob/master/LICENSE"))
 
 unmanagedResources in Compile <++= baseDirectory map { base => (base / "NOTICE") +: (base / "LICENSE") +: ((base / "licenses") * "LICENSE_*").get }

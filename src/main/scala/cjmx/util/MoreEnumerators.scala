@@ -6,6 +6,8 @@ import scalaz.effect._
 import scalaz.iteratee._
 
 import java.io.BufferedReader
+import java.util.concurrent.BlockingQueue
+
 
 
 object MoreEnumerators {
@@ -30,5 +32,26 @@ object MoreEnumerators {
       ii => ii.point[({type l[a] = EnumeratorT[a, F]})#l],
       implicitly[Monoid[EnumeratorT[A, F]]].zero
     ) }
+  }
+
+  sealed trait Signal[+A]
+  final case class Value[A](value: A) extends Signal[A]
+  final case object Done extends Signal[Nothing]
+
+  def enumBlockingQueue[E, F[_] : Monad](q: BlockingQueue[Signal[E]], termination: => Any = ()): EnumeratorT[E, F] = {
+    new EnumeratorT[E, F] {
+      def apply[A] = (s: StepT[E, F, A]) =>
+        s.mapContOr({
+          k => {
+            q.take() match {
+              case Value(v) => k(Input(v)) >>== apply[A]
+              case Done => s.pointI
+            }
+          }
+        }, {
+          termination
+          s.pointI
+        })
+    }
   }
 }
