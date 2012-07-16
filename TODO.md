@@ -1,2 +1,3 @@
-Add help content for query expressions
-TabularData handling
+- Add help content for query expressions
+- TabularData handling
+- Add optional support for monitor style expressions (foo.bar.baz) in query expressions (will require a class to be loaded in to remote VM - either via manual classpath config or via loadAgent)
