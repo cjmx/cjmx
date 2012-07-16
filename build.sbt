@@ -1,8 +1,8 @@
-import AssemblyKeys._
+seq(conscriptSettings :_*)
 
-name := "JMX Command Line Client"
+name := "cjmx"
 
-version := "1.0"
+version := "1.0.0"
 
 scalaVersion := "2.9.2"
 

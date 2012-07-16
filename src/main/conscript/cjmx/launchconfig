@@ -1,0 +1,11 @@
+[app]
+  version: 1.0.0
+  org: cjmx
+  name: cjmx
+  class: cjmx.AppMain
+[scala]
+  version: 2.9.2
+[repositories]
+  local
+  typesafe: http://repo.typesafe.com/typesafe/repo
+  maven-central
