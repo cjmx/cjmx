@@ -3,6 +3,11 @@ cjmx
 
 cjmx is a command line JMX client intended to be used when graphical tools (e.g., JConsole, VisualVM) are unavailable.  Additionally, cjmx intends to be useful in scripting environments.
 
+Building
+========
+
+To build, run `./sbt publish-local`.  This will build target/cjmx.jar and install a copy to your local ivy cache.
+
 Usage
 =====
 
