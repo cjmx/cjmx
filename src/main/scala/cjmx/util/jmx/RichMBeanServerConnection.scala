@@ -4,6 +4,7 @@ import scala.collection.JavaConverters._
 
 import scalaz.syntax.Ops
 
+import java.rmi.UnmarshalException
 import javax.management._
 
 
@@ -20,8 +21,21 @@ trait RichMBeanServerConnection extends Ops[MBeanServerConnection] {
   def mbeanInfo(name: ObjectName): Option[MBeanInfo] =
     Option(self.getMBeanInfo(name))
 
+  def attribute(name: ObjectName, attributeName: String): Option[Attribute] =
+    try Some(new Attribute(attributeName, self.getAttribute(name, attributeName)))
+    catch {
+      case (_: UnmarshalException | _: JMException) =>
+        None
+    }
+
   def attributes(name: ObjectName, attributeNames: Array[String]): Seq[Attribute] =
-    self.getAttributes(name, attributeNames).asScala.toSeq.asInstanceOf[Seq[Attribute]]
+    try self.getAttributes(name, attributeNames).asScala.toSeq.asInstanceOf[Seq[Attribute]]
+    catch {
+      case (_: UnmarshalException | _: JMException) =>
+        attributeNames map { attrName =>
+          attribute(name, attrName).getOrElse(new Attribute(attrName, "unavailable"))
+        }
+    }
 }
 
 trait ToRichMBeanServerConnection {
