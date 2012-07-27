@@ -40,7 +40,7 @@ object REPL {
               val lines = errs.list flatMap { _.split('\n') }
               val formatted = lines map { e => "[%serror%s] %s".format(Console.RED, Console.RESET, e) }
               formatted foreach out.println
-              state
+              state.withStatusCode(1)
           }
           runR(newState)
 
