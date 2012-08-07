@@ -123,10 +123,10 @@ object JMXParsers {
       properties.map { case (k, v) => k + "=" + v } ++ (if (wildcardProperty) Seq("*") else Seq.empty)
     ).mkString(",")
 
-    def oname: Validation[MalformedObjectNameException, ObjectName] = {
-      try new ObjectName(toString).success
+    def oname: MalformedObjectNameException \/ ObjectName = {
+      try new ObjectName(toString).right
       catch {
-        case e: MalformedObjectNameException => e.fail
+        case e: MalformedObjectNameException => e.left
       }
     }
   }

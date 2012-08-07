@@ -20,14 +20,14 @@ object App {
       consoleReader
     } else {
       val firstArgAsConnect = args.head.parseInt.map { pid => "connect -q " + pid }
-      firstArgAsConnect match {
-        case Success(cmd) if args.tail.isEmpty =>
-          prefixedReader(cmd +: args.tail, consoleReader)
-        case Success(cmd) =>
-          constReader(cmd +: args.tail :+ "exit").liftReader[Parser[_]]
-        case _ =>
-          constReader(args :+ "exit").liftReader[Parser[_]]
-      }
+      firstArgAsConnect fold (
+        _ => constReader(args :+ "exit").liftReader[Parser[_]],
+        cmd =>
+          if (args.tail.isEmpty)
+            prefixedReader(cmd +: args.tail, consoleReader)
+          else
+            constReader(cmd +: args.tail :+ "exit").liftReader[Parser[_]]
+      )
     }
 
     REPL.run(reader, Console.out)
