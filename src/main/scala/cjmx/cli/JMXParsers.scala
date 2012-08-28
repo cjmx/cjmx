@@ -320,7 +320,7 @@ object JMXParsers {
         for {
           (leftName, leftValue) <- lhs(attrs)
           (rightName, rightValue) <- rhs(attrs)
-          result <- (liftToBigDecimal(leftValue) |@| liftToBigDecimal(rightValue)) apply op.apply
+          result <- ^(liftToBigDecimal(leftValue), liftToBigDecimal(rightValue))(op.apply)
         } yield ("%s %s %s".format(leftName, op.name, rightName), result)
       }
     }.Expr.examples(Set("<value>", "<attribute>") ++ attributeNames)
