@@ -54,7 +54,7 @@ object Parsers {
     MBeanAction(svr) | PrefixNames(svr) | PrefixDescribe(svr) | PrefixSelect(svr) | PrefixSample(svr) | PrefixInvoke(svr) | Disconnect | GlobalActions !!! "Invalid input"
   }
 
-  private def MBeanAction(svr: MBeanServerConnection): Parser[Action] =
+  def MBeanAction(svr: MBeanServerConnection): Parser[Action] =
     for {
       _ <- token("mbeans ")
       query <- MBeanQueryP(svr) <~ SpaceClass.*

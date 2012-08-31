@@ -12,7 +12,6 @@ import Scalaz._
 import com.sun.tools.attach._
 
 import javax.management._
-import javax.management.remote.JMXConnector
 
 import MoreParsers._
 
