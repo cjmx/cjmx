@@ -6,8 +6,10 @@ import scala.collection.JavaConverters._
 import scalaz._
 import Scalaz._
 
+import java.lang.management.ManagementFactory
 import javax.management._
 import javax.management.openmbean._
+import javax.management.remote.JMXConnector
 
 
 object JMXTags {
@@ -18,6 +20,10 @@ object JMXTags {
   def Value(v: AnyRef): AnyRef @@ Value = Tag[AnyRef, Value](v)
 }
 
+trait JMXConnection {
+  def mbeanServer: MBeanServerConnection
+  def dispose()
+}
 
 trait JMXFunctions {
   import JMXInstances._
@@ -82,6 +88,16 @@ trait JMXFunctions {
   private val newline = "%n".format()
   private def indentLines(indent: Int)(s: String): String =
     s.split(newline).map { s => (" " * indent) + s }.mkString(newline)
+
+  implicit def connectorToConnection(connector: JMXConnector): JMXConnection = new JMXConnection {
+    override def mbeanServer = connector.getMBeanServerConnection
+    override def dispose() = connector.close()
+  }
+
+  def PlatformMBeanServerConnection: JMXConnection = new JMXConnection {
+    override def mbeanServer = ManagementFactory.getPlatformMBeanServer
+    override def dispose() {}
+  }
 }
 
 object JMXFunctions extends JMXFunctions

@@ -11,7 +11,6 @@ import com.sun.tools.attach._
 import scala.collection.JavaConverters._
 
 import javax.management._
-import javax.management.remote.JMXConnector
 
 import cjmx.util.jmx.MBeanQuery
 import JMXParsers._
@@ -49,8 +48,7 @@ object Parsers {
     }
 
 
-  def Connected(cnx: JMXConnector): Parser[Action] = {
-    val svr = cnx.getMBeanServerConnection
+  def Connected(svr: MBeanServerConnection): Parser[Action] = {
     MBeanAction(svr) | PrefixNames(svr) | PrefixDescribe(svr) | PrefixSelect(svr) | PrefixSample(svr) | PrefixInvoke(svr) | Disconnect | GlobalActions !!! "Invalid input"
   }
 

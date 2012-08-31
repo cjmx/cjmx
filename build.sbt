@@ -12,6 +12,8 @@ licenses += ("Three-clause BSD-style license", url("http://github.com/mpilquist/
 
 unmanagedResources in Compile <++= baseDirectory map { base => (base / "NOTICE") +: (base / "LICENSE") +: ((base / "licenses") * "LICENSE_*").get }
 
+triggeredMessage := (_ => Watched.clearScreen)
+
 resolvers += "Typesafe" at "http://repo.typesafe.com/typesafe/repo"
 
 //resolvers += "Sonatype OSS" at "https://oss.sonatype.org/content/repositories/snapshots"

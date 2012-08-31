@@ -5,14 +5,13 @@ import scala.collection.JavaConverters._
 import scalaz.syntax.show._
 
 import javax.management.{Attribute, ObjectName, QueryExp}
-import javax.management.remote.JMXConnector
 
 import cjmx.util.jmx._
 
 
 case class Query(query: MBeanQuery, projection: Seq[Attribute] => Seq[Attribute] = identity) extends SimpleConnectedAction {
-  def act(context: ActionContext, connection: JMXConnector) = {
-    val svr = connection.getMBeanServerConnection
+  def act(context: ActionContext, connection: JMXConnection) = {
+    val svr = connection.mbeanServer
     val names = svr.toScala.queryNames(query).toList.sorted
     val namesAndAttrs = names map { name =>
       val info = svr.getMBeanInfo(name)

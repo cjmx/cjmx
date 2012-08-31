@@ -5,9 +5,7 @@ import scalaz.syntax.id._
 import scalaz.effect.IO
 import scalaz.iteratee._
 
-import javax.management.remote.JMXConnector
-
-import cjmx.util.jmx.JMX
+import cjmx.util.jmx.{JMX, JMXConnection}
 
 package object cli extends JMX {
   type ActionResult = (ActionContext, EnumeratorT[String, IO])
@@ -25,13 +23,13 @@ package object cli extends JMX {
   trait ConnectedAction extends Action {
     final def apply(context: ActionContext) =
       applyConnected(context, context.connectionState.asInstanceOf[Connected].connection)
-    def applyConnected(context: ActionContext, connection: JMXConnector): ActionResult
+    def applyConnected(context: ActionContext, connection: JMXConnection): ActionResult
   }
 
   trait SimpleConnectedAction extends ConnectedAction {
-    final def applyConnected(context: ActionContext, connection: JMXConnector) =
+    final def applyConnected(context: ActionContext, connection: JMXConnection) =
       act(context, connection) |> enumMessageSeq |> { msgs => (context.withStatusCode(0), msgs) }
-    def act(context: ActionContext, connection: JMXConnector): Seq[String]
+    def act(context: ActionContext, connection: JMXConnection): Seq[String]
   }
 
   final object NoopAction extends Action {

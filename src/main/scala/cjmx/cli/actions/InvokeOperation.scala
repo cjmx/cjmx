@@ -6,14 +6,13 @@ import scalaz._
 import Scalaz._
 
 import javax.management._
-import javax.management.remote.JMXConnector
 
 import cjmx.util.jmx._
 
 
 case class InvokeOperation(query: MBeanQuery, operationName: String, params: Seq[AnyRef]) extends ConnectedAction {
-  def applyConnected(context: ActionContext, connection: JMXConnector) = {
-    val svr = connection.getMBeanServerConnection
+  def applyConnected(context: ActionContext, connection: JMXConnection) = {
+    val svr = connection.mbeanServer
     val names = svr.toScala.queryNames(query).toSeq.sorted
     val results = names map { name =>
       val info = svr.getMBeanInfo(name)

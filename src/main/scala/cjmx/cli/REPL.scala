@@ -19,12 +19,14 @@ import cjmx.util.jmx.JMX
 
 object REPL {
   def run(reader: Parser[_] => LineReader, out: PrintStream): Int = {
+    val printer: IterateeT[String, IO, Unit] = Iteratee.fold(()) { (_: Unit, m: String) => out.write(m.getBytes) }
+    val outputter: IterateeT[String, IO, Unit] = printer %= Iteratee.map(addNewline)
     @tailrec def runR(state: ActionContext): Int = {
       state.runState match {
         case Running =>
           val parser = state.connectionState match {
             case Disconnected => Parsers.Disconnected(JMX.localVMs)
-            case Connected(cnx) => Parsers.Connected(cnx)
+            case Connected(cnx) => Parsers.Connected(cnx.mbeanServer)
           }
           def readLine = reader(parser).readLine("> ").fold(some, some("exit")).filter { _.nonEmpty }
           val result = for {
@@ -40,7 +42,7 @@ object REPL {
               state.withStatusCode(1)
             },
             { case (newState, msgs) =>
-              (putStrTo[String](out) %= Iteratee.map((_: String) + "%n".format()) &= msgs).run.unsafePerformIO
+              (outputter &= msgs).run.unsafePerformIO
               newState
             }
           )
@@ -53,4 +55,7 @@ object REPL {
 
     runR(ActionContext())
   }
+
+  private val newline = "%n".format()
+  private val addNewline = (_: String) + newline
 }
