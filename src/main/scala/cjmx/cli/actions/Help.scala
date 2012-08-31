@@ -3,7 +3,6 @@ package actions
 
 import scalaz._
 import Scalaz._
-import scalaz.effect._
 import scalaz.iteratee._
 import IterateeT._
 import EnumeratorT._

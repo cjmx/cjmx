@@ -1,7 +1,6 @@
 package cjmx.cli
 package actions
 
-import scalaz.effect.IO
 import scalaz.iteratee.EnumeratorT
 
 

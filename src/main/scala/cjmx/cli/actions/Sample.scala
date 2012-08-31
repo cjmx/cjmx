@@ -4,7 +4,7 @@ package actions
 import scala.collection.JavaConverters._
 import scalaz.std.AllInstances._
 import scalaz.syntax.show._
-import scalaz.effect.IO
+import scalaz.Free.Trampoline
 import scalaz.iteratee._
 import Iteratee._
 
@@ -35,7 +35,7 @@ case class Sample(query: Query, periodSeconds: Int, durationSeconds: Int) extend
           var running = started
           while (!stop.get && running < finished) {
             val (_, enum) = query(context)
-            val strs = (collect[String, List].up[IO] &= enum).run.unsafePerformIO
+            val strs = (collect[String, List].up[Trampoline] &= enum).run.run
             strs foreach { s => queue.put(Value(s)) }
             running += periodMillis
             try Thread.sleep(running - System.currentTimeMillis)
@@ -64,7 +64,7 @@ case class Sample(query: Query, periodSeconds: Int, durationSeconds: Int) extend
 
     sampler.start()
     canceller.start()
-    (context, enumBlockingQueue[String, IO](queue, { stopSampler(); canceller.interrupt() }))
+    (context, enumBlockingQueue[String, Trampoline](queue, { stopSampler(); canceller.interrupt() }))
   }
 }
 

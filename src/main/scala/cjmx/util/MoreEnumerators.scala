@@ -12,9 +12,9 @@ import java.util.concurrent.BlockingQueue
 
 object MoreEnumerators {
   // Based on https://github.com/scalaz/scalaz/blob/scalaz-seven/iteratee/src/main/scala/scalaz/iteratee/EnumeratorT.scala#L155
-  def enumLines[F[_]](r: => BufferedReader)(implicit MO: MonadPartialOrder[F, IO]): EnumeratorT[IoExceptionOr[String], F] =
+  def enumLines[F[_]](r: => BufferedReader)(implicit M: Monad[F]): EnumeratorT[IoExceptionOr[String], F] =
     new EnumeratorT[IoExceptionOr[String], F] {
-      import MO._
+      import M._
       import EnumeratorT._
       lazy val reader = r
       def apply[A] = (s: StepT[IoExceptionOr[String], F, A]) =>

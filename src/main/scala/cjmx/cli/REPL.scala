@@ -4,7 +4,7 @@ import scala.annotation.tailrec
 
 import scalaz._
 import Scalaz._
-import scalaz.effect._
+import scalaz.Free.Trampoline
 import scalaz.iteratee._
 import IterateeT._
 
@@ -19,8 +19,8 @@ import cjmx.util.jmx.JMX
 
 object REPL {
   def run(reader: Parser[_] => LineReader, out: PrintStream): Int = {
-    val printer: IterateeT[String, IO, Unit] = Iteratee.fold(()) { (_: Unit, m: String) => out.write(m.getBytes) }
-    val outputter: IterateeT[String, IO, Unit] = printer %= Iteratee.map(addNewline)
+    val printer: IterateeT[String, Trampoline, Unit] = Iteratee.fold(()) { (_: Unit, m: String) => out.write(m.getBytes) }
+    val outputter: IterateeT[String, Trampoline, Unit] = printer %= Iteratee.map(addNewline)
     @tailrec def runR(state: ActionContext): Int = {
       state.runState match {
         case Running =>
@@ -42,7 +42,7 @@ object REPL {
               state.withStatusCode(1)
             },
             { case (newState, msgs) =>
-              (outputter &= msgs).run.unsafePerformIO
+              (outputter &= msgs).run.run
               newState
             }
           )
