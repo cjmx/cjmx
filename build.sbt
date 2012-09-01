@@ -10,7 +10,7 @@ scalaVersion := "2.9.2"
 
 scalacOptions += "-deprecation"
 
-licenses += ("Three-clause BSD-style license", url("http://github.com/cjmx/cjmx/blob/master/LICENSE"))
+licenses += ("Three-clause BSD-style", url("http://github.com/cjmx/cjmx/blob/master/LICENSE"))
 
 unmanagedResources in Compile <++= baseDirectory map { base => (base / "NOTICE") +: (base / "LICENSE") +: ((base / "licenses") * "LICENSE_*").get }
 
@@ -61,13 +61,6 @@ pomIncludeRepository := { x => false }
 
 pomExtra := (
   <url>http://github.com/cjmx/cjmx</url>
-  <licenses>
-    <license>
-      <name>BSD-style</name>
-      <url>http://github.com/cjmx/cjmx/blob/master/LICENSE</url>
-      <distribution>repo</distribution>
-    </license>
-  </licenses>
   <scm>
     <url>git@github.com:cjmx/cjmx.git</url>
     <connection>scm:git:git@github.com:cjmx/cjmx.git</connection>
