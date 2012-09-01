@@ -1,14 +1,16 @@
 seq(conscriptSettings :_*)
 
+organization := "com.github.cjmx"
+
 name := "cjmx"
 
-version := "1.0.0"
+version := "1.0.0-SNAPSHOT"
 
 scalaVersion := "2.9.2"
 
 scalacOptions += "-deprecation"
 
-licenses += ("Three-clause BSD-style license", url("http://github.com/mpilquist/cjmx/blob/master/LICENSE"))
+licenses += ("Three-clause BSD-style license", url("http://github.com/cjmx/cjmx/blob/master/LICENSE"))
 
 unmanagedResources in Compile <++= baseDirectory map { base => (base / "NOTICE") +: (base / "LICENSE") +: ((base / "licenses") * "LICENSE_*").get }
 
@@ -43,3 +45,38 @@ proguardOptions ++= Seq(keepMain("cjmx.Main"),
 
 proguardLibraryJars ++= toolsJar
 
+publishTo <<= version { v: String =>
+  val nexus = "https://oss.sonatype.org/"
+  if (v.trim.endsWith("SNAPSHOT"))
+    Some("snapshots" at nexus + "content/repositories/snapshots")
+  else
+    Some("releases" at nexus + "service/local/staging/deploy/maven2")
+}
+
+publishMavenStyle := true
+
+publishArtifact in Test := false
+
+pomIncludeRepository := { x => false }
+
+pomExtra := (
+  <url>http://github.com/cjmx/cjmx</url>
+  <licenses>
+    <license>
+      <name>BSD-style</name>
+      <url>http://github.com/cjmx/cjmx/blob/master/LICENSE</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+  <scm>
+    <url>git@github.com:cjmx/cjmx.git</url>
+    <connection>scm:git:git@github.com:cjmx/cjmx.git</connection>
+  </scm>
+  <developers>
+    <developer>
+      <id>mpilquist</id>
+      <name>Michael Pilquist</name>
+      <url>http://github.com/mpilquist</url>
+    </developer>
+  </developers>
+)
