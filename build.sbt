@@ -24,9 +24,9 @@ resolvers += "Typesafe" at "http://repo.typesafe.com/typesafe/repo"
 resolvers += Resolver.url("Typesafe Ivy Releases", url("http://repo.typesafe.com/typesafe/repo"))(Resolver.ivyStylePatterns)
 
 libraryDependencies ++=
-  "org.scalaz" %% "scalaz-core" % "7.0.0-M3" ::
-  "org.scalaz" %% "scalaz-effect" % "7.0.0-M3" ::
-  "org.scalaz" %% "scalaz-iteratee" % "7.0.0-M3" ::
+  "org.scalaz" %% "scalaz-core" % "7.0.0-M4" ::
+  "org.scalaz" %% "scalaz-effect" % "7.0.0-M4" ::
+  "org.scalaz" %% "scalaz-iteratee" % "7.0.0-M4" ::
   "org.scala-sbt" % "completion" % "0.12.0" ::
   "com.google.code.gson" % "gson" % "2.2.2" ::
   "org.scalatest" % "scalatest_2.9.0" % "1.8" % "test" ::
