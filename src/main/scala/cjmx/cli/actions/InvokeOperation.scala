@@ -45,7 +45,7 @@ case class InvokeOperation(query: MBeanQuery, operationName: String, params: Seq
   private def matchesSignature(op: MBeanOperationInfo): Boolean =  {
     val sig = op.getSignature
     sig.size == params.size &&
-      signatureTypes(op).fold(ts => (ts zip params).foldLeft(true) {
+      signatureTypes(op).cata(ts => (ts zip params).foldLeft(true) {
         case (acc, (s, p)) => acc && s.isAssignableFrom(p.getClass)
       }, false)
   }

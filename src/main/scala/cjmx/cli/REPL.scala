@@ -28,11 +28,11 @@ object REPL {
             case Disconnected => Parsers.Disconnected(JMX.localVMs)
             case Connected(cnx) => Parsers.Connected(cnx.mbeanServer)
           }
-          def readLine = reader(parser).readLine("> ").fold(some, some("exit")).filter { _.nonEmpty }
+          def readLine = reader(parser).readLine("> ").cata(some, some("exit")).filter { _.nonEmpty }
           val result = for {
             line <- readLine.right[NonEmptyList[String]]
             parse = (line: String) => Parser.parse(line, parser).disjunction.bimap(_.wrapNel, identity)
-            action <- line.fold(parse, NoopAction.right)
+            action <- line.cata(parse, NoopAction.right)
           } yield action(state)
           val newState = result fold (
             errs => {

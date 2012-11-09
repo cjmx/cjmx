@@ -8,7 +8,27 @@ version := "1.0.0-SNAPSHOT"
 
 scalaVersion := "2.9.2"
 
-scalacOptions += "-deprecation"
+crossScalaVersions := Seq("2.9.2", "2.10.0-RC2")
+
+scalacOptions ++= Seq(
+  "-deprecation",
+  "-unchecked",
+  "-optimise",
+  "-Xcheckinit",
+  "-Xlint",
+  "-Xverify",
+  "-Yclosure-elim",
+  "-Yinline",
+  "-Ywarn-all")
+
+scalacOptions <++= scalaVersion map { sv =>
+  val MajorMinor = """(\d+)\.(\d+).*""".r
+  sv match {
+    case MajorMinor(major, minor) if major.toInt > 2 || major == "2" && minor.toInt >= 10 =>
+      Seq("-feature", "-language:_")
+    case _ => Seq.empty
+  }
+}
 
 licenses += ("Three-clause BSD-style", url("http://github.com/cjmx/cjmx/blob/master/LICENSE"))
 
@@ -39,6 +59,7 @@ proguardSettings
 minJarPath <<= target / "cjmx.jar"
 
 proguardOptions ++= Seq(keepMain("cjmx.Main"),
+  "-keep class scala.Either { *; }",
   "-dontobfuscate",
   "-dontoptimize",
   "-keepattributes Exceptions,InnerClasses,Signature,Deprecated,SourceFile,LineNumberTable,*Annotation*,EnclosingMethod")

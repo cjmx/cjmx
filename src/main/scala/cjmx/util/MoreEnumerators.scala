@@ -28,7 +28,7 @@ object MoreEnumerators {
     }
 
   def enumIgnoringIoExceptions[A, F[_]](e: EnumeratorT[IoExceptionOr[A], F])(implicit M: Monad[F]): EnumeratorT[A, F] = {
-    e flatMap { i => i.toOption.fold(
+    e flatMap { i => i.toOption.cata(
       ii => ii.point[({type l[a] = EnumeratorT[a, F]})#l],
       implicitly[Monoid[EnumeratorT[A, F]]].zero
     ) }

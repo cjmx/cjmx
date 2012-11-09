@@ -253,7 +253,7 @@ object JMXParsers {
 
   def Projection(svr: MBeanServerConnection, query: Option[MBeanQuery]): Parser[Seq[Attribute] => Seq[Attribute]] = {
     val getAttributeNames = svr.getMBeanInfo(_: ObjectName).getAttributes.map { _.getName }.toSet
-    val attributeNames = query.fold(q => svr.toScala.queryNames(q).flatMap(getAttributeNames), Set.empty[String])
+    val attributeNames = query.cata(q => svr.toScala.queryNames(q).flatMap(getAttributeNames), Set.empty[String])
     new ProjectionProductions(attributeNames).Projection
   }
 
@@ -266,7 +266,7 @@ object JMXParsers {
           val attrsAsMap = attrs.map { attr => attr.getName -> attr.getValue }.toMap
           attrMappings.foldLeft(Seq.empty[Attribute]) { (acc, mapping) =>
             val attr = mapping(attrsAsMap).map { case (k, v) => new Attribute(k, v) }
-            attr.fold(a => acc :+ a, acc)
+            attr.cata(a => acc :+ a, acc)
           }
         }
       })
@@ -359,7 +359,7 @@ object JMXParsers {
     ArrayP(StringValue)
   }.examples("<value>")
 
-  private def ArrayP[A: ClassManifest](p: Parser[A]): Parser[Array[A]] =
+  private def ArrayP[A: Manifest](p: Parser[A]): Parser[Array[A]] =
     (token("{") ~> repsep(ws.* ~> p, ws.* ~> ',') <~ ws.* <~ token("}")) map { _.toArray }
 
   private def Identifier(quotes: Char*) = (JavaIdentifier | QuotedIdentifier(quotes: _*)).examples("identifier")
