@@ -8,7 +8,7 @@ version := "1.0.0-M1"
 
 scalaVersion := "2.9.2"
 
-crossScalaVersions := Seq("2.9.2", "2.10.0-RC2")
+//crossScalaVersions := Seq("2.9.2", "2.10.0-RC2")
 
 scalacOptions ++= Seq(
   "-deprecation",
@@ -59,7 +59,6 @@ proguardSettings
 minJarPath <<= target / "cjmx.jar"
 
 proguardOptions ++= Seq(keepMain("cjmx.Main"),
-  "-keep class scala.Either { *; }",
   "-dontobfuscate",
   "-dontoptimize",
   "-keepattributes Exceptions,InnerClasses,Signature,Deprecated,SourceFile,LineNumberTable,*Annotation*,EnclosingMethod")
@@ -95,4 +94,4 @@ pomExtra := (
   </developers>
 )
 
-//useGpg := true
+useGpg := true
