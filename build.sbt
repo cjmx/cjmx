@@ -56,13 +56,16 @@ libraryDependencies ++=
 
 unmanagedClasspath in Compile ++= toolsJar
 
-jarName in assembly := "cjmx.jar"
+proguardSettings
 
-artifact in (Compile, assembly) ~= { art =>
-  art.copy(`classifier` = Some("app"))
-}
+minJarPath <<= target / "cjmx.jar"
 
-addArtifact(artifact in (Compile, assembly), assembly)
+proguardOptions ++= Seq(keepMain("cjmx.Main"),
+  "-dontobfuscate",
+  "-dontoptimize",
+  "-keepattributes Exceptions,InnerClasses,Signature,Deprecated,SourceFile,LineNumberTable,*Annotation*,EnclosingMethod")
+
+proguardLibraryJars ++= toolsJar
 
 publishTo <<= version { v: String =>
   val nexus = "https://oss.sonatype.org/"
