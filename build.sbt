@@ -1,7 +1,3 @@
-import AssemblyKeys._
-
-assemblySettings
-
 seq(conscriptSettings :_*)
 
 organization := "com.github.cjmx"
@@ -10,9 +6,9 @@ name := "cjmx"
 
 version := "1.0.0-SNAPSHOT"
 
-scalaVersion := "2.9.2"
+scalaVersion := "2.10.0"
 
-//crossScalaVersions := Seq("2.9.2", "2.10.0")
+crossScalaVersions := Seq("2.9.2", "2.10.0")
 
 scalacOptions ++= Seq(
   "-deprecation",
@@ -49,10 +45,19 @@ libraryDependencies ++=
   "org.scalaz" %% "scalaz-core" % "7.0.0-M7" ::
   "org.scalaz" %% "scalaz-effect" % "7.0.0-M7" ::
   "org.scalaz" %% "scalaz-iteratee" % "7.0.0-M7" ::
-  "org.scala-sbt" % "completion" % "0.12.0" ::
   "com.google.code.gson" % "gson" % "2.2.2" ::
-  "org.scalatest" %% "scalatest" % "2.0.M6-SNAP3" % "test" ::
+  ("org.scalatest" % "scalatest" % "2.0.M5" % "test" cross CrossVersion.binaryMapped {
+    case "2.10" => "2.10.0"
+    case other => other
+  }) ::
   Nil
+
+libraryDependencies <+= (scalaVersion) { sv =>
+  "org.scala-sbt" % "completion" % (sv match {
+    case "2.9.2" => "0.12.0"
+    case "2.10.0" => "0.13.0-SNAPSHOT"
+  })
+}
 
 unmanagedClasspath in Compile ++= toolsJar
 
@@ -96,4 +101,17 @@ pomExtra := (
   </developers>
 )
 
-useGpg := true
+pomPostProcess := { (node) =>
+  import scala.xml._
+  import scala.xml.transform._
+  def stripIf(f: Node => Boolean) = new RewriteRule {
+    override def transform(n: Node) =
+      if (f(n)) NodeSeq.Empty else n
+  }
+  val stripSnapshots = stripIf { n => n.label == "dependency" && (n \ "version").text.endsWith("-SNAPSHOT") }
+  val stripTestScope = stripIf { n => n.label == "dependency" && (n \ "scope").text == "test" }
+  val stripConscriptDependencies = stripIf { n => n.label == "dependency" && Set("xsbt", "launcher-interface").contains((n \ "artifactId").text) }
+  new RuleTransformer(stripSnapshots, stripTestScope, stripConscriptDependencies).transform(node)(0)
+}
+
+//useGpg := true
