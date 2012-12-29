@@ -7,7 +7,6 @@ import Parser._
 import sbt.complete.DefaultParsers._
 
 import org.scalatest._
-import org.scalatest.matchers._
 
 
 class ExpressionParserTest extends FunSuite with ShouldMatchers {

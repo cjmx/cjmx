@@ -6,7 +6,6 @@ import javax.management.{MalformedObjectNameException, ObjectName}
 import sbt.complete.Parser
 
 import org.scalatest._
-import org.scalatest.matchers._
 
 import JMXParsers._
 

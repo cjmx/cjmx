@@ -6,7 +6,6 @@ import javax.management._
 import sbt.complete.Parser
 
 import org.scalatest._
-import org.scalatest.matchers._
 
 
 class QueryExpParserTest extends FunSuite with ShouldMatchers {

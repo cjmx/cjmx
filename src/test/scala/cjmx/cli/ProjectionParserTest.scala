@@ -11,7 +11,6 @@ import javax.management.openmbean.{CompositeData, CompositeDataSupport, Composit
 import sbt.complete.Parser
 
 import org.scalatest._
-import org.scalatest.matchers._
 
 import cjmx.util.jmx._
 import cjmx.util.jmx.JMX._
