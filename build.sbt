@@ -42,6 +42,7 @@ resolvers += "Typesafe" at "http://repo.typesafe.com/typesafe/repo"
 resolvers += Resolver.url("Typesafe Ivy Releases", url("http://repo.typesafe.com/typesafe/repo"))(Resolver.ivyStylePatterns)
 
 libraryDependencies ++=
+  "com.github.cjmx" % "cjmx-ext" % "1.0.0-SNAPSHOT" ::
   "org.scalaz" %% "scalaz-core" % "7.0.0-M7" ::
   "org.scalaz" %% "scalaz-effect" % "7.0.0-M7" ::
   "org.scalaz" %% "scalaz-iteratee" % "7.0.0-M7" ::

@@ -15,6 +15,7 @@ import javax.management._
 
 import MoreParsers._
 
+import cjmx.ext.AttributePathValueExp
 import cjmx.util.Math.liftToBigDecimal
 import cjmx.util.jmx.{JMX, MBeanQuery}
 import cjmx.util.jmx.JMX._
@@ -239,9 +240,10 @@ object JMXParsers {
       override lazy val Value = Attribute | Literal
     }.Expr.examples(Set("<value>", "<attribute>") ++ attributeNames)
 
-    lazy val Attribute = (NonQualifiedAttribute | QualifiedAttribute).examples("<attribute>")
+    lazy val Attribute = (NonQualifiedAttribute | QualifiedAttribute | AttributePath).examples("<attribute>")
     lazy val NonQualifiedAttribute = Identifier(DQuoteChar) map Q.attr
     lazy val QualifiedAttribute = (rep1sep(JavaIdentifier, '.') <~ '#') ~ JavaIdentifier map { case clsParts ~ attr => Q.attr(clsParts.mkString("."), attr) }
+    lazy val AttributePath = rep1sep(Identifier(DQuoteChar), '.') map { parts => new AttributePathValueExp(parts.head, new java.util.ArrayList(parts.tail.asJava)) }
 
     lazy val Literal = BooleanLiteral | LongLiteral | DoubleLiteral | StringLiteral
     lazy val BooleanLiteral = BooleanValue map Q.value
