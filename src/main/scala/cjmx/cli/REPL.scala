@@ -10,6 +10,7 @@ import IterateeT._
 
 import java.io.PrintWriter
 import java.io.PrintStream
+import java.rmi.UnmarshalException
 
 import sbt.LineReader
 import sbt.complete.Parser
@@ -33,7 +34,8 @@ object REPL {
             line <- readLine.right[NonEmptyList[String]]
             parse = (line: String) => Parser.parse(line, parser).disjunction.bimap(_.wrapNel, identity)
             action <- line.cata(parse, NoopAction.right)
-          } yield action(state)
+            res <- \/.fromTryCatch(action(state)).bimap(t => humanizeActionException(t).wrapNel, identity)
+          } yield res
           val newState = result fold (
             errs => {
               val lines = errs.list flatMap { _.split('\n') }
@@ -58,4 +60,14 @@ object REPL {
 
   private val newline = "%n".format()
   private val addNewline = (_: String) + newline
+
+  private def humanizeActionException(t: Throwable): String = t match {
+    case e: UnmarshalException
+      if e.getCause != null &&
+         e.getCause.isInstanceOf[ClassNotFoundException] &&
+         e.getCause.getMessage.contains("cjmx.ext.") =>
+      "Command cannot be executed because it requires attached process to have the cjmx-ext JAR on its classpath."
+    case e: ClassNotFoundException => "Nope"
+    case other => other.getClass.getName + " = " + other.getMessage
+  }
 }
