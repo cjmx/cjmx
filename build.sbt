@@ -115,6 +115,3 @@ pomPostProcess := { (node) =>
   new RuleTransformer(stripSnapshots, stripTestScope, stripConscriptDependencies).transform(node)(0)
 }
 
-useGpg := true
-
-useGpgAgent := true
