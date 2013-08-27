@@ -41,9 +41,9 @@ resolvers += Resolver.url("Typesafe Ivy Releases", url("http://repo.typesafe.com
 
 libraryDependencies ++=
   "com.github.cjmx" % "cjmx-ext" % "1.0.0.RELEASE" ::
-  "org.scalaz" %% "scalaz-core" % "7.0.3" ::
-  "org.scalaz" %% "scalaz-effect" % "7.0.3" ::
-  "org.scalaz" %% "scalaz-iteratee" % "7.0.3" ::
+  "org.scalaz" %% "scalaz-core" % "7.1.0-M2" ::
+  "org.scalaz" %% "scalaz-effect" % "7.1.0-M2" ::
+  "org.scalaz" %% "scalaz-iteratee" % "7.1.0-M2" ::
   "org.scala-sbt" % "completion" % "0.13.0" ::
   "com.google.code.gson" % "gson" % "2.2.2" ::
   "org.scalatest" %% "scalatest" % "2.0.RC1-SNAP4" % "test" ::

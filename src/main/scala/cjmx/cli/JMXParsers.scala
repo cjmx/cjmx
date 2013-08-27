@@ -7,7 +7,10 @@ import sbt.complete.Parser
 import sbt.complete.DefaultParsers._
 
 import scalaz.{Digit => _, _}
-import Scalaz._
+import scalaz.std.option._
+import scalaz.syntax.apply._
+import scalaz.syntax.id._
+import scalaz.syntax.std.option._
 
 import com.sun.tools.attach._
 
@@ -60,7 +63,7 @@ object JMXParsers {
           success(key)
       }.examples {
         val keys = for {
-          nameSoFar <- soFar.addPropertyWildcardChar.oname.toOption.toSet
+          nameSoFar <- soFar.addPropertyWildcardChar.oname.toOption.toSet: Set[ObjectName]
           name <- safely(Set.empty[ObjectName]) { svr.toScala.queryNames(Some(nameSoFar), None) }
           (key, value) <- name.getKeyPropertyList |> mapAsScalaMap
           if !soFar.properties.contains(key)
@@ -71,7 +74,7 @@ object JMXParsers {
     def PropertyValue(svr: MBeanServerConnection, soFar: ObjectNameBuilder, key: String): Parser[String] =
       PropertyPart(valuePart = true).examples {
         val values = for {
-          nameSoFar <- soFar.addProperty(key, "*").addPropertyWildcardChar.oname.toOption.toSet
+          nameSoFar <- soFar.addProperty(key, "*").addPropertyWildcardChar.oname.toOption.toSet: Set[ObjectName]
           name <- safely(Set.empty[ObjectName]) { svr.toScala.queryNames(Some(nameSoFar), None) }
           value <- (name.getKeyPropertyList |> mapAsScalaMap).get(key)
         } yield value
@@ -343,9 +346,9 @@ object JMXParsers {
   private def OperationName(svr: MBeanServerConnection, query: Option[MBeanQuery]): Parser[String] = {
     val ops: Set[String] = safely(Set.empty[String]) {
       for {
-        q <- query.toSet
+        q <- query.toSet: Set[MBeanQuery]
         n <- svr.queryNames(q)
-        i <- svr.mbeanInfo(n).toSet
+        i <- svr.mbeanInfo(n).toSet: Set[MBeanInfo]
         o <- i.getOperations
       } yield o.getName
     }

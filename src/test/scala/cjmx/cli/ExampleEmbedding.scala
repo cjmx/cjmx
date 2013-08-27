@@ -3,18 +3,17 @@ package cjmx.cli
 import scalaz.\/
 import scalaz.Free.Trampoline
 import scalaz.std.vector._
-import scalaz.syntax.id._
+import scalaz.syntax.either._
 import scalaz.syntax.std.either._
 import scalaz.iteratee.IterateeT.collectT
 
 import org.scalatest._
-import org.scalatest.matchers.ShouldMatchers
 
 import sbt.complete.Parser
 import cjmx.util.jmx.JMX
 
 
-class ExampleEmbedding extends FunSuite with ShouldMatchers {
+class ExampleEmbedding extends FunSuite with Matchers {
 
   test("Example of running mbean actions against current jvm") {
     val result = runMBeanAction("mbeans 'java.lang:type=Memory' select *").fold(e => Vector(e), identity)

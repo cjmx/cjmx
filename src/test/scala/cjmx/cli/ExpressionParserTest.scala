@@ -9,7 +9,7 @@ import sbt.complete.Parsers.Digit
 import org.scalatest._
 
 
-class ExpressionParserTest extends FunSuite with ShouldMatchers {
+class ExpressionParserTest extends FunSuite with Matchers {
 
   val validExamples = Seq(
     "1 + 2" -> "(+ 1 2)",

@@ -10,7 +10,7 @@ import org.scalatest._
 import JMXParsers._
 
 
-class ObjectNameParserTest extends FunSuite with ShouldMatchers {
+class ObjectNameParserTest extends FunSuite with Matchers {
 
   val validExamples = Seq(
     // Basic examples

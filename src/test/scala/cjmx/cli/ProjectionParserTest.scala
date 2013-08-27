@@ -16,7 +16,7 @@ import cjmx.util.jmx._
 import cjmx.util.jmx.JMX._
 
 
-class ProjectionParserTest extends FunSuite with ShouldMatchers {
+class ProjectionParserTest extends FunSuite with Matchers {
 
   // Assumes HeapMemoryUsage.{init = 0, committed=1000000000, used=500000000, max=2000000000}
   val validExamplesBasedOnMemoryMXBean = Seq(

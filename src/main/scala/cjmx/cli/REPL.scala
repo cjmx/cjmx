@@ -3,8 +3,12 @@ package cjmx.cli
 import scala.annotation.tailrec
 
 import scalaz._
-import Scalaz._
 import scalaz.Free.Trampoline
+import scalaz.std.option._
+import scalaz.syntax.either._
+import scalaz.syntax.std.either._
+import scalaz.syntax.nel._
+import scalaz.syntax.std.option._
 import scalaz.iteratee._
 import IterateeT._
 

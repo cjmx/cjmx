@@ -8,7 +8,7 @@ import sbt.complete.Parser
 import org.scalatest._
 
 
-class QueryExpParserTest extends FunSuite with ShouldMatchers {
+class QueryExpParserTest extends FunSuite with Matchers {
 
   val validExamples = Seq(
 

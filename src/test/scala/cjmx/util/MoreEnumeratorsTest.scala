@@ -11,10 +11,9 @@ import java.io.{BufferedReader, IOException, StringReader}
 import java.util.concurrent.{BlockingQueue, ArrayBlockingQueue, CountDownLatch, TimeUnit}
 
 import org.scalatest._
-import org.scalatest.matchers.ShouldMatchers
 
 
-class MoreEnumeratorsTest extends FunSuite with ShouldMatchers {
+class MoreEnumeratorsTest extends FunSuite with Matchers {
   import MoreEnumerators._
 
   test("enumLines") {
