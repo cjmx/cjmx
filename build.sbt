@@ -36,9 +36,7 @@ unmanagedResources in Compile <++= baseDirectory map { base => (base / "NOTICE")
 
 triggeredMessage := (_ => Watched.clearScreen)
 
-resolvers += "Typesafe" at "http://repo.typesafe.com/typesafe/repo"
-
-// SBT 0.12.0 is only available in the Ivy Releases repository
+// SBT is only available in the Ivy Releases repository
 resolvers += Resolver.url("Typesafe Ivy Releases", url("http://repo.typesafe.com/typesafe/repo"))(Resolver.ivyStylePatterns)
 
 libraryDependencies ++=
