@@ -4,7 +4,7 @@ organization := "com.github.cjmx"
 
 name := "cjmx"
 
-version := "1.0.0.RELEASE"
+version := "1.0.1-SNAPSHOT"
 
 scalaVersion := "2.10.2"
 
