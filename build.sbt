@@ -4,7 +4,7 @@ organization := "com.github.cjmx"
 
 name := "cjmx"
 
-version := "1.0.0-SNAPSHOT"
+version := "1.0.0.RELEASE"
 
 scalaVersion := "2.10.2"
 
@@ -40,7 +40,7 @@ triggeredMessage := (_ => Watched.clearScreen)
 resolvers += Resolver.url("Typesafe Ivy Releases", url("http://repo.typesafe.com/typesafe/repo"))(Resolver.ivyStylePatterns)
 
 libraryDependencies ++=
-  "com.github.cjmx" % "cjmx-ext" % "1.0.0-SNAPSHOT" ::
+  "com.github.cjmx" % "cjmx-ext" % "1.0.0.RELEASE" ::
   "org.scalaz" %% "scalaz-core" % "7.0.3" ::
   "org.scalaz" %% "scalaz-effect" % "7.0.3" ::
   "org.scalaz" %% "scalaz-iteratee" % "7.0.3" ::
