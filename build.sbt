@@ -6,9 +6,9 @@ name := "cjmx"
 
 version := "1.0.0-SNAPSHOT"
 
-scalaVersion := "2.10.1"
+scalaVersion := "2.10.2"
 
-crossScalaVersions := Seq("2.9.3", "2.10.1")
+crossScalaVersions := Seq("2.10.2")
 
 scalacOptions ++= Seq(
   "-deprecation",
@@ -43,23 +43,13 @@ resolvers += Resolver.url("Typesafe Ivy Releases", url("http://repo.typesafe.com
 
 libraryDependencies ++=
   "com.github.cjmx" % "cjmx-ext" % "1.0.0-SNAPSHOT" ::
-  "org.scalaz" %% "scalaz-core" % "7.0.0" ::
-  "org.scalaz" %% "scalaz-effect" % "7.0.0" ::
-  "org.scalaz" %% "scalaz-iteratee" % "7.0.0" ::
+  "org.scalaz" %% "scalaz-core" % "7.0.3" ::
+  "org.scalaz" %% "scalaz-effect" % "7.0.3" ::
+  "org.scalaz" %% "scalaz-iteratee" % "7.0.3" ::
+  "org.scala-sbt" % "completion" % "0.13.0" ::
   "com.google.code.gson" % "gson" % "2.2.2" ::
-  ("org.scalatest" % "scalatest" % "2.0.M5" % "test" cross CrossVersion.binaryMapped {
-    case "2.10.1" => "2.10.0"
-    case "2.9.3" => "2.9.2"
-    case other => other
-  }) ::
+  "org.scalatest" %% "scalatest" % "2.0.RC1-SNAP4" % "test" ::
   Nil
-
-libraryDependencies <+= (scalaVersion) { sv =>
-  "org.scala-sbt" % "completion" % (sv match {
-    case "2.9.3" => "0.12.0"
-    case "2.10.1" => "0.13.0-SNAPSHOT"
-  })
-}
 
 unmanagedClasspath in Compile ++= toolsJar
 
