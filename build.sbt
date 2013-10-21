@@ -4,11 +4,11 @@ organization := "com.github.cjmx"
 
 name := "cjmx"
 
-version := "1.1.0-SNAPSHOT"
+version := "2.0.0-SNAPSHOT"
 
-scalaVersion := "2.10.2"
+scalaVersion := "2.10.3"
 
-crossScalaVersions := Seq("2.10.2")
+crossScalaVersions := Seq("2.10.3")
 
 scalacOptions ++= Seq(
   "-deprecation",
@@ -46,7 +46,7 @@ libraryDependencies ++=
   "org.scalaz" %% "scalaz-iteratee" % "7.1.0-M2" ::
   "org.scala-sbt" % "completion" % "0.13.0" ::
   "com.google.code.gson" % "gson" % "2.2.2" ::
-  "org.scalatest" %% "scalatest" % "2.0.RC1-SNAP4" % "test" ::
+  "org.scalatest" %% "scalatest" % "2.0.RC2" % "test" ::
   Nil
 
 unmanagedClasspath in Compile ++= toolsJar
