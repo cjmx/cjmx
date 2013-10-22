@@ -3,14 +3,14 @@ package cjmx.cli
 import scala.annotation.tailrec
 
 import scalaz._
+import scalaz.concurrent.Task
 import scalaz.Free.Trampoline
 import scalaz.std.option._
 import scalaz.syntax.either._
 import scalaz.syntax.std.either._
 import scalaz.syntax.nel._
 import scalaz.syntax.std.option._
-import scalaz.iteratee._
-import IterateeT._
+import scalaz.stream.{Process, Sink}
 
 import java.io.PrintWriter
 import java.io.PrintStream
@@ -24,8 +24,10 @@ import cjmx.util.jmx.JMX
 
 object REPL {
   def run(reader: Parser[_] => LineReader, out: PrintStream): Int = {
-    val printer: IterateeT[String, Trampoline, Unit] = Iteratee.fold(()) { (_: Unit, m: String) => out.write(m.getBytes) }
-    val outputter: IterateeT[String, Trampoline, Unit] = printer %= Iteratee.map(addNewline)
+    // A `Sink` that writes to `out`
+    val printer: Sink[Task,String] =
+      scalaz.stream.io.channel((m: String) => Task.delay(out.write(m.getBytes)))
+
     @tailrec def runR(state: ActionContext): Int = {
       state.runState match {
         case Running =>
@@ -47,8 +49,7 @@ object REPL {
               formatted foreach out.println
               state.withStatusCode(1)
             },
-            { case (newState, msgs) =>
-              (outputter &= msgs).run.run
+            { case (newState, msgs) => msgs.intersperse(newline).to(printer).run.run
               newState
             }
           )

@@ -4,9 +4,6 @@ package actions
 import scala.collection.JavaConverters._
 import scalaz.std.AllInstances._
 import scalaz.syntax.show._
-import scalaz.Free.Trampoline
-import scalaz.iteratee._
-import Iteratee._
 
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.TimeUnit._
@@ -35,8 +32,10 @@ case class Sample(query: Query, periodSeconds: Int, durationSeconds: Int) extend
           var running = started
           while (!stop.get && running < finished) {
             val (_, enum) = query(context)
-            val strs = (collect[String, List].up[Trampoline] &= enum).run.run
+            val strs = new collection.mutable.ListBuffer[String]
+            enum.to(scalaz.stream.io.fillBuffer(strs)).run.run
             strs foreach { s => queue.put(Value(s)) }
+            strs.clear
             running += periodMillis
             try Thread.sleep(running - System.currentTimeMillis)
             catch {
@@ -64,7 +63,7 @@ case class Sample(query: Query, periodSeconds: Int, durationSeconds: Int) extend
 
     sampler.start()
     canceller.start()
-    (context, enumBlockingQueue[String, Trampoline](queue, { stopSampler(); canceller.interrupt() }))
+    (context, enumBlockingQueue(queue, { stopSampler(); canceller.interrupt() }))
   }
 }
 

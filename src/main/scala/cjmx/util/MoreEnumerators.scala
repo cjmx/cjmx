@@ -1,57 +1,44 @@
 package cjmx.util
 
-import scalaz._
-import Scalaz._
-import scalaz.effect._
-import scalaz.iteratee._
-
-import java.io.BufferedReader
+import java.io.{BufferedReader, InputStream, IOException}
 import java.util.concurrent.BlockingQueue
 
-
+import scalaz._
+import Scalaz._
+import scalaz.concurrent.Task
+import scalaz.effect._
+import scalaz.stream.Process
+import scalaz.stream.io
 
 object MoreEnumerators {
-  // Based on https://github.com/scalaz/scalaz/blob/scalaz-seven/iteratee/src/main/scala/scalaz/iteratee/EnumeratorT.scala#L155
-  def enumLines[F[_]](r: => BufferedReader)(implicit M: Monad[F]): EnumeratorT[IoExceptionOr[String], F] =
-    new EnumeratorT[IoExceptionOr[String], F] {
-      import M._
-      import EnumeratorT._
-      lazy val reader = r
-      def apply[A] = (s: StepT[IoExceptionOr[String], F, A]) =>
-        s.mapContOr({
-          k => {
-            val i = IoExceptionOr(reader.readLine)
-            if (i exists { _ != null }) k(Input(i)) >>== apply[A]
-            else s.pointI
-          }
-        }, { IoExceptionOr(reader.close()); s.pointI })
-    }
 
-  def enumIgnoringIoExceptions[A, F[_]](e: EnumeratorT[IoExceptionOr[A], F])(implicit M: Monad[F]): EnumeratorT[A, F] = {
-    e flatMap { i => i.toOption.cata(
-      ii => ii.point[({type l[a] = EnumeratorT[a, F]})#l],
-      implicitly[Monoid[EnumeratorT[A, F]]].zero
-    ) }
-  }
+  /** Return the stream of lines from the given `BufferedReader`. */
+  def linesR(src: BufferedReader): Process[Task,String] =
+    Process.repeatEval { Task.delay(src.readLine) }
+           .onComplete { Process.eval_(Task.delay(src.close)) }
 
+  /** Ignore all `IOException`s but reraise all others. */
+  def ignoreIOExceptions[A](p: Process[Task,A]): Process[Task,A] =
+    p.partialAttempt {
+      case e: IOException => Process.halt
+    } map { _ fold (e => sys.error("unpossible"), identity) }
+
+  /**
+   * Returns the stream of elements from the given `BlockingQueue`,
+   * using `Done` to terminate the listener. The `termination`
+   * side effect is run when the stream is completed.
+   */
+  def enumBlockingQueue[A](q: BlockingQueue[Signal[A]], termination: => Any = ()): Process[Task,A] =
+    Process.repeatEval(Task.delay(q.take())).flatMap {
+      case Done => throw Process.End // early termination
+      case Value(a) => Process.emit(a)
+    } onComplete (Process.eval_(Task.delay(termination)))
+
+  /**
+   * Message type for `BlockingQueue`-based stream. Enqueueing a `Done`
+   * terminates the stream.
+   */
   sealed trait Signal[+A]
   final case class Value[A](value: A) extends Signal[A]
   final case object Done extends Signal[Nothing]
-
-  def enumBlockingQueue[E, F[_] : Monad](q: BlockingQueue[Signal[E]], termination: => Any = ()): EnumeratorT[E, F] = {
-    new EnumeratorT[E, F] {
-      def apply[A] = (s: StepT[E, F, A]) =>
-        s.mapContOr({
-          k => {
-            q.take() match {
-              case Value(v) => k(Input(v)) >>== apply[A]
-              case Done => s.pointI
-            }
-          }
-        }, {
-          termination
-          s.pointI
-        })
-    }
-  }
 }

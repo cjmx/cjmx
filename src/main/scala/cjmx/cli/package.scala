@@ -3,20 +3,31 @@ package cjmx
 import scalaz._
 import scalaz.syntax.id._
 import scalaz.Free.Trampoline
-import scalaz.iteratee._
+import scalaz.concurrent.Task
+import scalaz.stream.Process
 
 import cjmx.util.jmx.{JMX, JMXConnection}
 
 package object cli extends JMX {
-  type ActionResult = (ActionContext, EnumeratorT[String, Trampoline])
+  /** A stream of `A` values. */
+  type Source[+A] = Process[Task,A]
+  type ActionResult = (ActionContext, Source[String])
   type Action = ActionContext => ActionResult
 
-  def enumMessageList(msgs: List[String]): EnumeratorT[String, Trampoline] = EnumeratorT.enumList[String, Trampoline](msgs)
-  def enumMessageSeq(msgs: Seq[String]): EnumeratorT[String, Trampoline] = enumMessageList(msgs.toList)
-  def enumMessages(msgs: String*): EnumeratorT[String, Trampoline] = enumMessageList(msgs.toList)
+  def enumMessageList(msgs: List[String]): Source[String] =
+    Process.emitAll(msgs)
+
+  def enumMessageSeq(msgs: Seq[String]): Source[String] =
+    Process.emitAll(msgs)
+
+  def enumMessages(msgs: String*): Source[String] =
+    Process.emitAll(msgs)
 
   trait SimpleAction extends Action {
-    final def apply(context: ActionContext) = act(context) |> enumMessageSeq |> { msgs => (context.withStatusCode(0), msgs) }
+    final def apply(context: ActionContext) = {
+      val msgs = enumMessageSeq(act(context))
+      (context.withStatusCode(0), msgs)
+    }
     def act(context: ActionContext): Seq[String]
   }
 
@@ -27,12 +38,14 @@ package object cli extends JMX {
   }
 
   trait SimpleConnectedAction extends ConnectedAction {
-    final def applyConnected(context: ActionContext, connection: JMXConnection) =
-      act(context, connection) |> enumMessageSeq |> { msgs => (context.withStatusCode(0), msgs) }
+    final def applyConnected(context: ActionContext, connection: JMXConnection) = {
+      val msgs = enumMessageSeq(act(context, connection))
+      (context.withStatusCode(0), msgs)
+    }
     def act(context: ActionContext, connection: JMXConnection): Seq[String]
   }
 
   final object NoopAction extends Action {
-    def apply(context: ActionContext) = (context, EnumeratorT.empty[String, Trampoline])
+    def apply(context: ActionContext) = (context, Process.halt)
   }
 }

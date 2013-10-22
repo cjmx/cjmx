@@ -1,16 +1,14 @@
 package cjmx.cli
 package actions
 
-import scalaz._
-import scalaz.iteratee.EnumeratorT.enumOne
-
 import cjmx.util.jmx.Attach
+import scalaz.stream.Process
 
 
 case class Connect(vmid: String, quiet: Boolean) extends Action {
   def apply(context: ActionContext) = {
     Attach.localConnect(vmid) fold (
-      err => (context.withStatusCode(1), enumOne(err)),
+      err => (context.withStatusCode(1), Process.emit(err)),
       cnx => {
         val server = cnx.getMBeanServerConnection
         (context.connected(cnx), enumMessageList(if (quiet) List.empty else List(
