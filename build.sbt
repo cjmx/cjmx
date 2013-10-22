@@ -17,7 +17,7 @@ scalacOptions ++= Seq(
   "-Xcheckinit",
   "-Xlint",
   "-Xverify",
-//  "-Yclosure-elim",
+  "-Yclosure-elim",
 //  "-Yinline",
   "-Ywarn-all")
 
