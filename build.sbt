@@ -39,6 +39,9 @@ triggeredMessage := (_ => Watched.clearScreen)
 // SBT is only available in the Ivy Releases repository
 resolvers += Resolver.url("Typesafe Ivy Releases", url("http://repo.typesafe.com/typesafe/repo"))(Resolver.ivyStylePatterns)
 
+// Scalaz-stream is available from this repo
+resolvers += "Scalaz Bintray Repo" at "http://dl.bintray.com/scalaz/releases"
+
 libraryDependencies ++=
   "com.github.cjmx" % "cjmx-ext" % "1.0.0.RELEASE" ::
   "org.scalaz" %% "scalaz-core" % "7.1.0-M2" ::
@@ -47,9 +50,12 @@ libraryDependencies ++=
   "org.scala-sbt" % "completion" % "0.13.0" ::
   "com.google.code.gson" % "gson" % "2.2.2" ::
   "org.scalatest" %% "scalatest" % "2.0.RC2" % "test" ::
+  "org.scalaz.stream" %% "scalaz-stream" % "0.2a" ::
   Nil
 
 unmanagedClasspath in Compile ++= toolsJar
+
+unmanagedClasspath in Test ++= toolsJar
 
 proguardSettings
 
