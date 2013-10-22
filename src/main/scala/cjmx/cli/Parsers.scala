@@ -7,7 +7,7 @@ import sbt.complete.DefaultParsers._
 import scalaz.{Digit => _, _}
 import Scalaz._
 
-import com.sun.tools.attach._
+import com.sun.tools.attach.VirtualMachineDescriptor
 import scala.collection.JavaConverters._
 
 import javax.management._
