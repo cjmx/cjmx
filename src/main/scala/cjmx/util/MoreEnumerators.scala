@@ -8,20 +8,20 @@ import Scalaz._
 import scalaz.concurrent.Task
 import scalaz.effect._
 import scalaz.stream.Process
-import scalaz.stream.io
 
 object MoreEnumerators {
 
   /** Return the stream of lines from the given `BufferedReader`. */
   def linesR(src: BufferedReader): Process[Task,String] =
-    Process.repeatEval { Task.delay(src.readLine) }
+    Process.repeatEval { readLine(src) }
            .onComplete { Process.eval_(Task.delay(src.close)) }
 
-  /** Ignore all `IOException`s but reraise all others. */
-  def ignoreIOExceptions[A](p: Process[Task,A]): Process[Task,A] =
-    p.partialAttempt {
-      case e: IOException => Process.halt
-    } map { _ fold (e => sys.error("unpossible"), identity) }
+  private def readLine(src: BufferedReader): Task[String] =
+    Task.delay {
+      val line = src.readLine
+      if (line eq null) throw Process.End // null signals EOF
+      else line
+    }
 
   /**
    * Returns the stream of elements from the given `BlockingQueue`,

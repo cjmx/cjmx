@@ -5,7 +5,6 @@ import scalaz.Free.Trampoline
 import scalaz.std.vector._
 import scalaz.syntax.either._
 import scalaz.syntax.std.either._
-import scalaz.iteratee.IterateeT.collectT
 
 import org.scalatest._
 
@@ -31,5 +30,5 @@ class ExampleEmbedding extends FunSuite with Matchers {
       else
         msgs.right
     }
-  } yield (collectT[String, Trampoline, Vector] &= msgEnum).run.run
+  } yield msgEnum.chunkAll.runLastOr(Vector()).run
 }
