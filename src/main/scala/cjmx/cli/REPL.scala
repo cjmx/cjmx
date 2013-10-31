@@ -49,7 +49,7 @@ object REPL {
               formatted foreach out.println
               state.withStatusCode(1)
             },
-            { case (newState, msgs) => msgs.intersperse(newline).to(printer).run.run
+            { case (newState, msgs) => msgs.map { _ + newline }.to(printer).run.run
               newState
             }
           )
