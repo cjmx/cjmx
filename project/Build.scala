@@ -7,11 +7,18 @@ object CjmxBuild extends Build {
   override def projects = Seq(root)
 
   val toolsJar = {
-    val r: Option[File] = Option(Path(Path.fileProperty("java.home").asFile.getParent) / "lib" / "tools.jar").filter { _.exists }
-    if (!r.isDefined) {
-      sys.error("'java.home' not defined; unable to locate tools.jar")
+    val javaHome = Path(Path.fileProperty("java.home").asFile.getParent)
+    val toolsJar = Option(javaHome / "lib" / "tools.jar").filter { _.exists }
+    if (toolsJar.isEmpty && !appleJdk6OrPrior) sys.error("tools.jar not in $JAVA_HOME/lib")
+    toolsJar.toSeq
+  }
+
+  def appleJdk6OrPrior: Boolean = {
+    (sys.props("java.vendor") contains "Apple") && {
+      val JavaVersion = """^(\d+)\.(\d+)\..*$""".r
+      val JavaVersion(major, minor) = sys.props("java.version")
+      major.toInt == 1 && minor.toInt < 7
     }
-    r.toSeq
   }
 
   lazy val proguardOutputJar = TaskKey[File]("proguard-output-jar")

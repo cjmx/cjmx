@@ -75,7 +75,6 @@ class ObjectNameParserTest extends FunSuite with Matchers {
     ("java.lang:type=", Set("*", "<value>", "ClassLoading", "Compilation", "GarbageCollector", "Memory", "MemoryManager", "MemoryPool", "OperatingSystem", "Runtime", "Threading")),
     ("java.lang:type=M", Set("Memory", "MemoryManager", "MemoryPool")),
     ("java.lang:type=MemoryPool,", Set("*", "<key>=", "name=")),
-    ("java.lang:type=MemoryPool,name=", Set("*", "<value>", "Code Cache", "CMS Old Gen", "CMS Perm Gen", "Par Eden Space", "Par Survivor Space")),
     ("java.lang:type=MemoryPool,name=Code Cache,", Set("*", "<key>="))
   )
 

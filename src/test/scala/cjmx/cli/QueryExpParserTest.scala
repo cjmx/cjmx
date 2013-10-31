@@ -70,15 +70,15 @@ class QueryExpParserTest extends FunSuite with Matchers {
 
     "UnloadedClassCount / LoadedClassCount + UnloadedClassCount * 100 < 1" ->
       Query.lt(
-        Query.times(
-          Query.plus(
-            Query.div(
-              Query.attr("UnloadedClassCount"),
-              Query.attr("LoadedClassCount")
-            ),
-            Query.attr("UnloadedClassCount")
+        Query.plus(
+          Query.div(
+            Query.attr("UnloadedClassCount"),
+            Query.attr("LoadedClassCount")
           ),
-          Query.value(100)
+          Query.times(
+            Query.attr("UnloadedClassCount"),
+            Query.value(100)
+          )
         ),
         Query.value(1)
       ),
