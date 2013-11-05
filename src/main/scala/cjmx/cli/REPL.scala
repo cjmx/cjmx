@@ -44,7 +44,7 @@ object REPL {
         action <- line.cata(parse, NoopAction.right)
         res <- \/.fromTryCatch(action(ctx)).bimap(t => humanizeActionException(t).wrapNel, identity)
       } yield res
-      val output: Process[Task,String] = result fold (
+      val output: Process[Task,String] = result.fold(
         errs => {
           val lines = errs.list flatMap { _.split('\n') }
           val formatted = lines map { e => "[%serror%s] %s".format(Console.RED, Console.RESET, e) }
@@ -55,7 +55,7 @@ object REPL {
           modifyCtx => Process.eval_ { ctxSignal.compareAndSet(_.map(modifyCtx)) },
           msg => msg.map(Process.emit(_)).getOrElse { Process.eval_ { ctxSignal.close }}
         )}
-      )
+      ) ++ Process.eval_ { ctxSignal.compareAndSet(_.map(_.withLastStatusCode(0))) } // only run on success
       output.attempt { err =>
         Process.eval_(ctxSignal.compareAndSet(_.map(_.withLastStatusCode(1)))) ++
         Process.emit(humanizeActionException(err))
