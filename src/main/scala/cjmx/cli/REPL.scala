@@ -31,8 +31,9 @@ object REPL {
       scalaz.stream.io.channel((m: String) => Task.delay(out.write(m.getBytes)))
 
     val ctxSignal = async.signal[ActionContext]; ctxSignal.value.set(ActionContext())
+    val alive = async.signal[Unit]; alive.value.set(())
 
-    ctxSignal.continuous.flatMap { ctx =>
+    ctxSignal.continuous.zip(alive.continuous).map(_._1).flatMap { ctx =>
       val parser = ctx.connectionState match {
         case None => Parsers.Disconnected(JMX.localVMs)
         case Some(cnx) => Parsers.Connected(cnx.mbeanServer)
@@ -53,7 +54,7 @@ object REPL {
         },
         msgs => msgs.flatMap { _.fold(
           modifyCtx => Process.eval_ { ctxSignal.compareAndSet(_.map(modifyCtx)) },
-          msg => msg.map(Process.emit(_)).getOrElse { Process.eval_ { ctxSignal.close }}
+          msg => msg.map(Process.emit(_)).getOrElse { Process.eval_ { alive.close }}
         )}
       ) ++ Process.eval_ { ctxSignal.compareAndSet(_.map(_.withLastStatusCode(0))) } // only run on success
       output.attempt { err =>
