@@ -5,6 +5,6 @@ import scalaz.stream.Process
 
 object Exit extends Action {
   override def apply(context: ActionContext) =
-    (context.exit(context.lastStatusCode), Process.halt)
+    Process.emitO(None)
 }
 

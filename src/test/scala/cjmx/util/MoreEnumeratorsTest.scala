@@ -22,27 +22,4 @@ class MoreEnumeratorsTest extends FunSuite with Matchers {
     val lines = linesR(reader)
     lines.chunkAll.runLastOr(Vector()).run should be (Vector("1", "2", "3", "4", "5"))
   }
-
-  test("enumBlockingQueue - natural termination") {
-    val queue = new ArrayBlockingQueue[Signal[Int]](5)
-    Task {
-      for (i <- 0 to 10) queue.put(Value(i))
-      queue.put(Done)
-    } runAsync { _ => () }
-
-    enumBlockingQueue(queue).runLog.run.toList should be (List(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
-  }
-
-  test("enumBlockingQueue - early termination") {
-    val queue = new ArrayBlockingQueue[Signal[Int]](3)
-    @volatile var ok = true
-    Task {
-      while(ok) queue.put(Value(0))
-    } runAsync { _ => () }
-
-    val latch = new CountDownLatch(1)
-    val q = enumBlockingQueue(queue, { latch.countDown; ok = false })
-    q.take(5).runLog.run.toList should be (List(0, 0, 0, 0, 0))
-    latch.await(2, TimeUnit.SECONDS)
-  }
 }
