@@ -4,8 +4,6 @@ organization := "com.github.cjmx"
 
 name := "cjmx"
 
-version := "2.0.0-SNAPSHOT"
-
 scalaVersion := "2.10.3"
 
 crossScalaVersions := Seq("2.10.3")
@@ -109,3 +107,4 @@ pomPostProcess := { (node) =>
   new RuleTransformer(stripSnapshots, stripTestScope, stripConscriptDependencies).transform(node)(0)
 }
 
+releaseSettings
