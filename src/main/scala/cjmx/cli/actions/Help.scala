@@ -15,9 +15,8 @@ case class Help(topic: Option[String]) extends Action {
     val resource = Option(getClass.getResourceAsStream(resourceName))
     val vResource = resource.toRightDisjunction("No help for %s".format(topic | ""))
     vResource fold (
-      err => (context.withStatusCode(1), Process.emit(err)),
-      resource => (context.withStatusCode(0),
-                   linesR(new BufferedReader(new InputStreamReader(resource))))
+      err => emitMessages(err) ++ fail(err),
+      resource => emitMessages(linesR(new BufferedReader(new InputStreamReader(resource))))
     )
   }
 }

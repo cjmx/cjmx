@@ -4,6 +4,7 @@ package actions
 import scala.collection.JavaConverters._
 import scalaz._
 import Scalaz._
+import scalaz.stream.Process
 
 import javax.management._
 
@@ -39,7 +40,7 @@ case class InvokeOperation(query: MBeanQuery, operationName: String, params: Seq
     }
     val msgs = context.formatter.formatInvocationResults(results)
     val sc = results.foldLeft(0) { case (acc, (name, res)) => acc max toStatusCode(res) }
-    (context.withStatusCode(sc), enumMessageSeq(msgs))
+    emitMessageSeq(msgs) ++ { if (sc == 0) Process.halt else fail("failure during invoke operation") }
   }
 
   private def matchesSignature(op: MBeanOperationInfo): Boolean =  {
