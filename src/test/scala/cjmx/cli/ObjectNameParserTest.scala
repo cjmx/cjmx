@@ -62,7 +62,7 @@ class ObjectNameParserTest extends FunSuite with Matchers {
   invalidExamples foreach { ex =>
     test("invalid - " + ex) {
       // sanity check example is invalid
-      evaluating { new ObjectName(ex) } should produce[MalformedObjectNameException]
+      a[MalformedObjectNameException] should be thrownBy { new ObjectName(ex) }
       parse(ex) should be ('left)
     }
   }

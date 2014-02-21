@@ -6,9 +6,11 @@ import scalaz._
 import scalaz.concurrent.Task
 import scalaz.Free.Trampoline
 import scalaz.std.option._
-import scalaz.syntax.either._
+// TODO scalaz 7.1
+//import scalaz.syntax.either._
+//import scalaz.syntax.nel._
+import scalaz.syntax.id._
 import scalaz.syntax.std.either._
-import scalaz.syntax.nel._
 import scalaz.syntax.std.option._
 import scalaz.stream.{Process, Sink}
 

@@ -47,12 +47,12 @@ resolvers += "Scalaz Bintray Repo" at "http://dl.bintray.com/scalaz/releases"
 
 libraryDependencies ++=
   "com.github.cjmx" % "cjmx-ext" % "1.0.0.RELEASE" ::
-  "org.scalaz" %% "scalaz-core" % "7.1.0-M2" ::
-  "org.scalaz" %% "scalaz-effect" % "7.1.0-M2" ::
+  "org.scalaz" %% "scalaz-core" % "7.0.5" ::
+  "org.scalaz" %% "scalaz-effect" % "7.0.5" ::
   "org.scala-sbt" % "completion" % "0.13.0" ::
   "com.google.code.gson" % "gson" % "2.2.2" ::
-  "org.scalatest" %% "scalatest" % "2.0.RC2" % "test" ::
-  "org.scalaz.stream" %% "scalaz-stream" % "0.2a" ::
+  "org.scalatest" %% "scalatest" % "2.1.0-RC2" % "test" ::
+  "org.scalaz.stream" %% "scalaz-stream" % "0.3.1" ::
   Nil
 
 unmanagedClasspath in Compile ++= toolsJar

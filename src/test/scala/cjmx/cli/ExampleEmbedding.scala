@@ -3,7 +3,8 @@ package cjmx.cli
 import scalaz.\/
 import scalaz.Free.Trampoline
 import scalaz.std.vector._
-import scalaz.syntax.either._
+//import scalaz.syntax.either._
+import scalaz.syntax.id._
 import scalaz.syntax.std.either._
 
 import org.scalatest._
