@@ -2,6 +2,7 @@ package cjmx.util.jmx
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
+import scala.language.implicitConversions
 
 import scalaz._
 import Scalaz._

@@ -14,6 +14,7 @@ scalaVersion := "2.10.3"
 crossScalaVersions := Seq("2.10.3")
 
 scalacOptions ++= Seq(
+  "-feature",
   "-deprecation",
   "-unchecked",
 //  "-optimise", // this seems to be triggering this bug - https://issues.scala-lang.org/browse/SI-3882
@@ -21,17 +22,8 @@ scalacOptions ++= Seq(
   "-Xlint",
   "-Xverify",
   "-Yclosure-elim",
-//  "-Yinline",
-  "-Ywarn-all")
-
-scalacOptions <++= scalaVersion map { sv =>
-  val MajorMinor = """(\d+)\.(\d+).*""".r
-  sv match {
-    case MajorMinor(major, minor) if major.toInt > 2 || major == "2" && minor.toInt >= 10 =>
-      Seq("-feature", "-language:_")
-    case _ => Seq.empty
-  }
-}
+  "-Ywarn-all",
+  "-Yno-adapted-args")
 
 licenses += ("Three-clause BSD-style", url("http://github.com/cjmx/cjmx/blob/master/LICENSE"))
 

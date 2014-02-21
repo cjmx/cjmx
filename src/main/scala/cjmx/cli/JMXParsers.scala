@@ -38,7 +38,7 @@ object JMXParsers {
     } yield oname
 
   def ObjectNameDomainParser(svr: MBeanServerConnection): Parser[String] =
-    (charClass(_ != ':', "object name domain")+).string.examples(svr.getDomains: _*)
+    (charClass(_ != ':', "object name domain").+).string.examples(svr.getDomains: _*)
 
   private object ObjectNameProductions {
 

@@ -1,6 +1,7 @@
 package cjmx.util.jmx
 
 import scala.collection.JavaConverters._
+import scala.language.implicitConversions
 
 import scalaz.syntax.Ops
 
