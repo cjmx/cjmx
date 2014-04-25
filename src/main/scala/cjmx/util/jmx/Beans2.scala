@@ -294,6 +294,25 @@ object Beans extends ToRichMBeanServerConnection {
       p1.zipWith(p2) { _ join _ }
   }
 
+  case class Results(subqueries: Map[SubqueryName, Seq[Result]]) {
+    def names: Set[ObjectName] = subqueries.values.flatMap(results => results.map(_.name)).toSet
+    def results: Seq[Result] = subqueries.values.flatten.toSeq
+  }
+
+  /** Run the query on the given result set. */
+  def interpret(r: Results)(where: Field[Boolean], select: Projection): Seq[Result] = {
+    import scalaz.std.list._
+    val rows: Seq[Row] = // compute cartesian product of beans in the join
+      Monad[List].sequence(r.subqueries.toList.map { case (k,v) => v.toList.map(k -> _) })
+                 .map(row => Row(row.toMap))
+    val out =
+      rows.filter { row => where.extract(row).getOrElse(false) } // filter out rows that fail to match
+          .flatMap { row => select.extract(row).toList } // then extract the fields we care about
+
+    // a bit arbitrary, but we union the attributes for all results coming from the same bean
+    out.flatMap(_.subqueries.values).groupBy(_.name).values.map(_.reduceLeft(_ union _)).toSeq
+  }
+
   // very quick and dirty - does not cover all possible globs
   private def compileGlob(glob: String): String => Boolean = {
     // convert to a regex pattern
@@ -310,10 +329,5 @@ object Beans extends ToRichMBeanServerConnection {
     out append '$'
     val P = out.toString.r
     s => s match { case P() => true; case _ => false }
-  }
-
-  case class Results(subqueries: Map[SubqueryName, Seq[Result]]) {
-    def names: Set[ObjectName] = subqueries.values.flatMap(results => results.map(_.name)).toSet
-    def results: Seq[Result] = subqueries.values.flatten.toSeq
   }
 }
