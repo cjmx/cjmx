@@ -166,7 +166,7 @@ object JMXParsers {
       ValuePredicate
     }
 
-   lazy val NotPredicate =
+    lazy val NotPredicate =
       (Not flatMap { _ => Predicate }).map(Q.not).examples("not <predicate>")
 
     lazy val InstanceOf =

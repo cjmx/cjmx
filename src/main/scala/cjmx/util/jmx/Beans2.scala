@@ -122,6 +122,26 @@ object Beans extends ToRichMBeanServerConnection {
     def xor(f: Field[A])(implicit toBool: A =:= Boolean): Field[Boolean] =
       Field { row => O.apply2(this.extract(row).map(toBool), f.extract(row).map(toBool))((a,b) => (a && !b) || (!a && b)) }
 
+    /** Returns true if this field's value is less than `f`. */
+    def <(f: Field[A])(implicit A: Ordering[A]): Field[Boolean] =
+      Field { row => O.apply2(this.extract(row), f.extract(row))(A.lt) }
+
+    /** Returns true if this field's value is greater than `f`. */
+    def >(f: Field[A])(implicit A: Ordering[A]): Field[Boolean] =
+      Field { row => O.apply2(this.extract(row), f.extract(row))(A.gt) }
+
+    /** Returns true if this field's value is greater than or equal to `f`. */
+    def >=(f: Field[A])(implicit A: Ordering[A]): Field[Boolean] =
+      Field { row => O.apply2(this.extract(row), f.extract(row))(A.gteq) }
+
+    /** Returns true if this field's value is less than or equal to `f`. */
+    def <=(f: Field[A])(implicit A: Ordering[A]): Field[Boolean] =
+      Field { row => O.apply2(this.extract(row), f.extract(row))(A.lteq) }
+
+    /** Returns true if this field's value is equal to `f`, using Object equality. */
+    def ===(f: Field[A]): Field[Boolean] =
+      Field { row => O.apply2(this.extract(row), f.extract(row))(_ == _) }
+
     /** Returns true if this field's value is `>= lower` and `<= upper`. */
     def between(lower: Field[A], upper: Field[A])(implicit A: Ordering[A]): Field[Boolean] =
       Field { row => O.apply3(this.extract(row), lower.extract(row), upper.extract(row))(
@@ -149,6 +169,14 @@ object Beans extends ToRichMBeanServerConnection {
     /** Returns true if this field's value matches the glob pattern given by `glob`. */
     def like(glob: Field[A])(implicit toS: A =:= String): Field[Boolean] =
       Field { row => O.apply2(this.extract(row), glob.extract(row))((word, pat) => compileGlob(pat)(word)) }
+  }
+
+  object Field {
+
+    /** Promote an `A` to a `Field[A]`. */
+    def literal[A](a: A): Field[A] = Field { _ => Some(a) }
+
+
   }
 
   // very quick and dirty - does not cover all possible globs
