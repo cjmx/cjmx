@@ -2,6 +2,7 @@ package cjmx.util.jmx
 
 import javax.management.{MBeanServerConnection,ObjectName,QueryExp,Query=>Q,StringValueExp,ValueExp}
 import scala.collection.JavaConverters._
+import scalaz.\/
 
 /** Typed API for interacting with MBeans. */
 object Beans extends ToRichMBeanServerConnection {
@@ -71,7 +72,7 @@ object Beans extends ToRichMBeanServerConnection {
                     attributes: Map[AttributeName,AnyRef]) {
 
     /** Extract a property from the `ObjectName` for this `Result`. */
-    def getKeyProperty(k: ObjectNameKey): Option[String] =
+    def getNameProperty(k: ObjectNameKey): Option[String] =
       Option(name.getKeyProperty(k.key))
 
     /** Extract an attribute value for the given attribute name. */
@@ -86,13 +87,37 @@ object Beans extends ToRichMBeanServerConnection {
   import scalaz.Monad
   val O = Monad[Option]
 
-  case class Row(subqueries: Map[SubqueryName, Result]) {}
+  case class Row(subqueries: Map[SubqueryName, Result]) {
+    def get(sub: SubqueryName): Option[Result] = subqueries.get(sub)
+  }
 
   case class Field[A](extract: Row => Option[A]) {
 
     // going to hold off on making Field a Monad, restricting its algebra to what
     // is provided here, in case we want to provide an initial encoding of this type
     // for sending to the server
+
+    /** Cast this `Field[A]` to a `Field[B]`. */
+    def as[B](implicit B: Manifest[B]): Field[B] =
+      Field { row => this.extract(row) flatMap {
+        case B(b) => Some(b)
+        case _ => None
+      }}
+
+    /** If this field's value is any numeric type, convert it to a `BigDecimal`. */
+    def asNumber: Field[BigDecimal] =
+      Field { row => this.extract(row) flatMap {
+        case bi: java.math.BigInteger => Some(BigDecimal(new BigInt(bi)))
+        case sbi: scala.math.BigInt => Some(BigDecimal(sbi))
+        case bd: java.math.BigDecimal => Some(BigDecimal(bd))
+        case sbd: scala.math.BigDecimal => Some(sbd)
+        case s: java.lang.Short => Some(BigDecimal((s: Short): Int))
+        case i: java.lang.Integer => Some(BigDecimal(i))
+        case l: java.lang.Long => Some(BigDecimal(l))
+        case f: java.lang.Float => Some(BigDecimal((f: Float): Double))
+        case d: java.lang.Double => Some(BigDecimal(d))
+        case _ => None
+      }}
 
     def +[N](f: Field[A])(implicit toN: A =:= N, N: Numeric[N]): Field[N] =
       Field { row => O.apply2(this.extract(row).map(toN), f.extract(row).map(toN))(N.plus) }
@@ -173,10 +198,37 @@ object Beans extends ToRichMBeanServerConnection {
 
   object Field {
 
+    /** A field which looks up the given attribute in the given subquery. */
+    def attribute(subquery: SubqueryName, key: AttributeName): Field[AnyRef] =
+      Field { row => row.get(subquery).map(_.attributes.get(key)) }
+
+    /** A field which looks up the given `ObjectName` property in the given subquery. */
+    def nameProperty(subquery: SubqueryName, key: ObjectNameKey): Field[String] =
+      Field { row => row.get(subquery).flatMap(_.getNameProperty(key)) }
+
     /** Promote an `A` to a `Field[A]`. */
     def literal[A](a: A): Field[A] = Field { _ => Some(a) }
 
-
+    def path(subquery: SubqueryName, path: List[ObjectNameKey \/ AttributeName]): Field[AnyRef] =
+      // we assume that the full bean is loaded, and any sub-beans have been converted to nested Map[AttributeName,AnyRef]
+      Field { row =>
+        row.get(subquery).flatMap { res =>
+          def go(cur: Option[AnyRef], path: List[ObjectNameKey \/ AttributeName]): Option[AnyRef] = cur match {
+            case None => None
+            case Some(ref) => path match {
+              case List() => Some(ref)
+              case h :: t => h.fold(
+                oname => ref match { case r: Result => go(r.getNameProperty(oname), t); case _ => None },
+                aname => ref match {
+                  case r: Result => go(r.getAttribute(aname), t)
+                  case r: Map[AttributeName @unchecked, AnyRef @unchecked] => go(r.get(aname), t)
+                }
+              )
+            }
+          }
+          go(Some(res), path)
+        }
+      }
   }
 
   // very quick and dirty - does not cover all possible globs
