@@ -78,6 +78,13 @@ object Beans extends ToRichMBeanServerConnection {
     /** Extract an attribute value for the given attribute name. */
     def getAttribute(k: AttributeName): Option[AnyRef] =
       attributes.get(k)
+
+    /** Update the value associated with the given attribute. */
+    def update[A](k: AttributeName, value: A): Result =
+      Result(name, attributes.updated(k, value.asInstanceOf[AnyRef]))
+
+    /** Add the attributes of `r` to this result's attributes. */
+    def union(r: Result): Result = Result(name, attributes ++ r.attributes)
   }
 
   // use foo:type to refer to an ObjectName key
@@ -85,10 +92,29 @@ object Beans extends ToRichMBeanServerConnection {
 
   import scalaz.std.option._
   import scalaz.Monad
-  val O = Monad[Option]
+  private val O = Monad[Option]
 
   case class Row(subqueries: Map[SubqueryName, Result]) {
+
     def get(sub: SubqueryName): Option[Result] = subqueries.get(sub)
+
+    def transform(f: (SubqueryName,Result) => Result): Row =
+      Row(subqueries.transform(f))
+
+    def filterKeys(f: SubqueryName => Boolean): Row =
+      Row(subqueries.filterKeys(f))
+
+    def join(r: Row): Row = {
+      val keys = subqueries.keySet ++ r.subqueries.keySet
+      Row {
+        keys.map { sub =>
+          val res = O.apply2(this.get(sub), r.get(sub))(_ union _)
+                  . orElse { this.get(sub) }
+                  . getOrElse { r.get(sub).getOrElse(sys.error("unpossible!!")) }
+          (sub -> res)
+        }.toMap
+      }
+    }
   }
 
   case class Field[A](extract: Row => Option[A]) {
@@ -194,6 +220,14 @@ object Beans extends ToRichMBeanServerConnection {
     /** Returns true if this field's value matches the glob pattern given by `glob`. */
     def like(glob: Field[A])(implicit toS: A =:= String): Field[Boolean] =
       Field { row => O.apply2(this.extract(row), glob.extract(row))((word, pat) => compileGlob(pat)(word)) }
+
+    /** Try extracting this field's value, and if that fails, try `f`. */
+    def orElse(f: Field[A]): Field[A] =
+      Field { row => this.extract(row) orElse f.extract(row) }
+
+    /** Combine the results of this field and `f` using the function `g`. */
+    def zipWith[B,C](f: Field[B])(g: (A,B) => C): Field[C] =
+      Field { row => O.apply2(this.extract(row), f.extract(row))(g) }
   }
 
   object Field {
@@ -209,6 +243,7 @@ object Beans extends ToRichMBeanServerConnection {
     /** Promote an `A` to a `Field[A]`. */
     def literal[A](a: A): Field[A] = Field { _ => Some(a) }
 
+    /** Promote a path into a bean to a `Field`. */
     def path(subquery: SubqueryName, path: List[ObjectNameKey \/ AttributeName]): Field[AnyRef] =
       // we assume that the full bean is loaded, and any sub-beans have been converted to nested Map[AttributeName,AnyRef]
       Field { row =>
@@ -216,7 +251,7 @@ object Beans extends ToRichMBeanServerConnection {
           def go(cur: Option[AnyRef], path: List[ObjectNameKey \/ AttributeName]): Option[AnyRef] = cur match {
             case None => None
             case Some(ref) => path match {
-              case List() => Some(ref)
+              case List() => ref match { case r: Result => None; case _ => Some(ref) }
               case h :: t => h.fold(
                 oname => ref match { case r: Result => go(r.getNameProperty(oname), t); case _ => None },
                 aname => ref match {
@@ -229,6 +264,34 @@ object Beans extends ToRichMBeanServerConnection {
           go(Some(res), path)
         }
       }
+  }
+
+  type Projection = Field[Row]
+
+  object Projection {
+
+    /** A projection which returns the full list of attributes, for all beans that are returned. */
+    val all: Projection =
+      Field { row => Some(row) }
+
+    /** A projection which returns the full set of beans, with all their attributes, for the given subquery. */
+    def subquery(sub: SubqueryName): Projection =
+      Field { row => row.get(sub).map(res => Row(Map(sub -> res))) }
+
+    /** A projection which extracts a single field, and outputs it to the given subqueries, using the given name. */
+    def single[A](f: Field[A])(as: AttributeName, in: SubqueryName*): Projection =
+      Field { row => f.extract(row).map { a =>
+        val subs = in.toSet
+        row.filterKeys(subs.contains).transform((subk, res) => res.update(as, a))
+      }}
+
+    /**
+     * A projection which combines the rows selected from each projection.
+     * If `p1` and `p2` both pick out a subquery, the results for that subquery
+     * are union'd together using `Result.union`. See `Row.join`.
+     */
+    def join(p1: Projection, p2: Projection): Projection =
+      p1.zipWith(p2) { _ join _ }
   }
 
   // very quick and dirty - does not cover all possible globs
