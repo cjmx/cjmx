@@ -24,6 +24,7 @@ object JsonMessageFormatter extends MessageFormatter {
     setDateFormat(DateFormat.LONG).
     setFieldNamingPolicy(FieldNamingPolicy.UPPER_CAMEL_CASE).
     setPrettyPrinting.
+    disableHtmlEscaping.
     create
 
   private def toJson(a: AnyRef): List[String] = List(gson.toJson(a))
