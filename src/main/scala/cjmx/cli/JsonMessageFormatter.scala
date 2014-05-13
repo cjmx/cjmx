@@ -16,8 +16,7 @@ object JsonMessageFormatter extends MessageFormatter {
 
   private val gson = new GsonBuilder().
     registerTypeAdapter(classOf[ObjectName], ObjectNameSerializer).
-    registerTypeAdapter(classOf[NameAndAttributeValues], NameAndAttributeValuesSerializer).
-    registerTypeAdapter(classOf[Attribute], AttributeSerializer).
+    registerTypeAdapter(classOf[Attributes], AttributesSerializer).
     registerTypeHierarchyAdapter(classOf[CompositeData], CompositeDataSerializer).
     registerTypeHierarchyAdapter(classOf[InvocationResult], InvocationResultSerializer).
     serializeNulls.
@@ -37,7 +36,7 @@ object JsonMessageFormatter extends MessageFormatter {
   }
 
   override def formatAttributes(attrsByName: Seq[(ObjectName, Seq[Attribute])]) = {
-    toJson(toLinkedHashMap(attrsByName.map { case (n, a) => n -> a.asJava }))
+    toJson(toLinkedHashMap(attrsByName.map { case (n, a) => n -> Attributes(a) }))
   }
 
   override def formatInfo(info: Seq[(ObjectName, MBeanInfo)], detailed: Boolean) = {
@@ -53,21 +52,13 @@ object JsonMessageFormatter extends MessageFormatter {
       new JsonPrimitive(src.toString)
   }
 
-  private case class NameAndAttributeValues(name: ObjectName, attributes: List[Attribute])
-  private object NameAndAttributeValuesSerializer extends JsonSerializer[NameAndAttributeValues] {
-    override def serialize(src: NameAndAttributeValues, typeOfSrc: Type, context: JsonSerializationContext) = {
+  private case class Attributes(attrs: Seq[Attribute])
+  private object AttributesSerializer extends JsonSerializer[Attributes] {
+    override def serialize(src: Attributes, typeOfSrc: Type, context: JsonSerializationContext) = {
       val obj = new JsonObject
-      obj.add("objectName", context.serialize(src.name))
-      obj.add("attributes", context.serialize(src.attributes.asJava))
-      obj
-    }
-  }
-
-  private object AttributeSerializer extends JsonSerializer[Attribute] {
-    override def serialize(src: Attribute, typeOfSrc: Type, context: JsonSerializationContext) = {
-      val obj = new JsonObject
-      obj.addProperty("name", src.getName)
-      obj.add("value", context.serialize(src.getValue))
+      src.attrs foreach { attr =>
+        obj.add(attr.getName, context.serialize(attr.getValue))
+      }
       obj
     }
   }
