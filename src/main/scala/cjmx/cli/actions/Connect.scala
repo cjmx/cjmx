@@ -2,6 +2,8 @@ package cjmx.cli
 package actions
 
 import cjmx.util.jmx.Attach
+import cjmx.util.jmx.JMX._
+
 import scalaz.stream.Process
 
 

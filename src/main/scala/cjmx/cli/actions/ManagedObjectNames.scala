@@ -5,8 +5,7 @@ import scalaz.syntax.validation._
 
 import javax.management.{ObjectName, QueryExp}
 
-import cjmx.util.jmx.{JMXConnection, MBeanQuery}
-
+import cjmx.util.jmx._
 
 case class ManagedObjectNames(query: MBeanQuery) extends SimpleConnectedAction {
   def act(context: ActionContext, connection: JMXConnection) = {

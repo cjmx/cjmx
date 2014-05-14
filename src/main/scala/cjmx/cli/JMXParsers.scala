@@ -14,13 +14,13 @@ import scalaz.syntax.std.option._
 
 import com.sun.tools.attach._
 
-import javax.management._
+import javax.management.{ JMX => _, _ }
 
 import MoreParsers._
 
 import cjmx.ext.AttributePathValueExp
 import cjmx.util.Math.liftToBigDecimal
-import cjmx.util.jmx.{JMX, MBeanQuery}
+import cjmx.util.jmx._
 import cjmx.util.jmx.JMX._
 
 

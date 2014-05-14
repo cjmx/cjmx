@@ -5,9 +5,10 @@ import scala.collection.JavaConverters._
 import scalaz._
 import Scalaz._
 
-import javax.management._
+import javax.management.{ JMX => _, _ }
 
 import cjmx.util.jmx._
+import JMX._
 
 
 case class InvokeOperation(query: MBeanQuery, operationName: String, params: Seq[AnyRef]) extends ConnectedAction {

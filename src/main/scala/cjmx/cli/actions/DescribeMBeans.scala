@@ -1,7 +1,7 @@
 package cjmx.cli
 package actions
 
-import cjmx.util.jmx.{JMXConnection, MBeanQuery}
+import cjmx.util.jmx._
 
 
 case class DescribeMBeans(query: MBeanQuery, detailed: Boolean) extends SimpleConnectedAction {
