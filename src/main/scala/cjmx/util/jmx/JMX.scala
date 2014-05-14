@@ -19,6 +19,10 @@ object JMXTags {
 
   sealed trait Value
   def Value(v: AnyRef): AnyRef @@ Value = Tag[AnyRef, Value](v)
+
+  /** String that represents a virtual maching PID. */
+  sealed trait VMID
+  def VMID(id: String): String @@ VMID = Tag[String, VMID](id)
 }
 
 trait JMXConnection {
@@ -119,7 +123,6 @@ trait JMX
   extends JMXInstances
   with JMXFunctions
   with ToRichMBeanServerConnection
-  with Attach
 
 object JMX extends JMX
 
