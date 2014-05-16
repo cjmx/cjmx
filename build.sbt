@@ -41,7 +41,7 @@ libraryDependencies ++=
   "com.github.cjmx" % "cjmx-ext" % "1.0.0.RELEASE" ::
   "org.scalaz" %% "scalaz-core" % "7.0.6" ::
   "org.scalaz" %% "scalaz-effect" % "7.0.6" ::
-  "org.scala-sbt" % "completion" % "0.13.0" ::
+  "org.scala-sbt" % "completion" % "0.13.5-RC3" ::
   "com.google.code.gson" % "gson" % "2.2.2" ::
   "org.scalatest" %% "scalatest" % "2.1.3" % "test" ::
   "org.scalaz.stream" %% "scalaz-stream" % "0.3.1" ::
