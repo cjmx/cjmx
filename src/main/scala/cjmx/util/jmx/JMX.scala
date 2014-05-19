@@ -33,6 +33,34 @@ object JMX {
           mkString(newline, newline, "") |> indentLines(2)
       case arr: Array[_] => arr.map { case v: AnyRef => JMXTags.Value(v).shows }.mkString("[", ", ", "]")
       case n if n eq null => "null"
+      case tds: TabularDataSupport =>
+
+        val tabularType = tds.getTabularType
+        val compositeType = tabularType.getRowType
+        val keys = compositeType.keySet.asScala
+
+        val lines = tds.getTabularType.getIndexNames.asScala.toList match {
+          // Optimize tables with single key
+          case uniqueKey :: Nil =>
+            val humanizedMap = tds.values.asScala.toList collect { case value: CompositeData =>
+              val strKey = value.get(uniqueKey).toString
+              val rest = (keys - uniqueKey).toList
+              rest match  {
+                case singleKey :: Nil => strKey -> value.get(singleKey)
+                case _                => strKey -> value.getAll(rest.toArray)
+              }
+            }
+            humanizedMap.sortBy { _._1 }.map { case (key, value) =>
+              s"${key}: ${humanizeValue(value)}"
+            }
+
+          case multipleKeys =>
+            tds.asScala.toList.map { case (_, value) =>
+              humanizeValue(value)
+            }
+        }
+        newline + lines.mkString(newline) |> indentLines(2)
+
       case other => other.toString
     }
   }

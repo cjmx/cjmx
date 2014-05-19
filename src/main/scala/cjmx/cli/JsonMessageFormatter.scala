@@ -11,10 +11,23 @@ import javax.management.openmbean._
 
 import com.google.gson._
 
+object JsonMessageFormatter {
+  val standard = new JsonMessageFormatter {
+    val gson = gsonBuilder.
+      registerTypeHierarchyAdapter(classOf[TabularDataSupport], TabularDataSupportSerializer).
+      create
+  }
 
-object JsonMessageFormatter extends MessageFormatter {
+  val compact = new JsonMessageFormatter {
+    val gson = gsonBuilder.
+      registerTypeHierarchyAdapter(classOf[TabularDataSupport], CompactTabularDataSupportSerializer).
+      create
+  }
 
-  private val gson = new GsonBuilder().
+}
+
+abstract class JsonMessageFormatter extends MessageFormatter {
+  val gsonBuilder = new GsonBuilder().
     registerTypeAdapter(classOf[ObjectName], ObjectNameSerializer).
     registerTypeAdapter(classOf[Attributes], AttributesSerializer).
     registerTypeHierarchyAdapter(classOf[CompositeData], CompositeDataSerializer).
@@ -23,8 +36,9 @@ object JsonMessageFormatter extends MessageFormatter {
     setDateFormat(DateFormat.LONG).
     setFieldNamingPolicy(FieldNamingPolicy.UPPER_CAMEL_CASE).
     setPrettyPrinting.
-    disableHtmlEscaping.
-    create
+    disableHtmlEscaping
+
+  def gson: Gson
 
   private def toJson(a: AnyRef): List[String] = List(gson.toJson(a))
 
@@ -71,6 +85,51 @@ object JsonMessageFormatter extends MessageFormatter {
     }
   }
 
+  private object TabularDataSupportSerializer extends JsonSerializer[TabularDataSupport] {
+    override def serialize(src: TabularDataSupport, typeOfSrc: Type, context: JsonSerializationContext) = {
+      val arr: JsonArray = new JsonArray()
+      src.asScala foreach { case (_, value) =>
+        arr.add(context.serialize(value))
+      }
+      arr
+    }
+  }
+
+  private object CompactTabularDataSupportSerializer extends JsonSerializer[TabularDataSupport] {
+    override def serialize(src: TabularDataSupport, typeOfSrc: Type, context: JsonSerializationContext) = {
+      val tabularType = src.getTabularType
+      val compositeType = tabularType.getRowType
+      val keys = compositeType.keySet.asScala
+
+      src.getTabularType.getIndexNames.asScala.toList match {
+        // Optimize JSON for tables with single key
+        case uniqueKey :: Nil =>
+          val obj: JsonObject = new JsonObject()
+          val entries = src.values.asScala.toList collect { case value: CompositeData =>
+            val rest = (keys - uniqueKey).toList
+            val indexKey = value.get(uniqueKey).toString
+            rest match  {
+              case singleKey :: Nil =>
+                indexKey -> context.serialize(value.get(singleKey))
+              case _ =>
+                indexKey -> context.serialize(value.getAll(rest.toArray))
+            }
+          }
+          entries.sortBy { _._1 }.foreach { case (key, value) =>
+            obj.add(key, value)
+          }
+          obj
+
+        case multipleKeys =>
+          val arr: JsonArray = new JsonArray()
+          src.asScala foreach { case (_, value) =>
+            arr.add(context.serialize(value))
+          }
+          arr
+      }
+    }
+  }
+
   private object InvocationResultSerializer extends JsonSerializer[InvocationResult] {
     override def serialize(src: InvocationResult, typeOfSrc: Type, context: JsonSerializationContext) = {
       val obj = new JsonObject
@@ -84,4 +143,3 @@ object JsonMessageFormatter extends MessageFormatter {
     }
   }
 }
-
