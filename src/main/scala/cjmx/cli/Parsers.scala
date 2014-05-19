@@ -27,7 +27,7 @@ object Parsers {
     (token("help") ~> (' ' ~> any.+.string).?) map { topic => actions.Help(topic) }
 
   private lazy val SetFormat: Parser[Action] =
-    token("format ") ~> (("text" ^^^ TextMessageFormatter) | "json" ^^^ JsonMessageFormatter) map actions.SetFormat
+    token("format ") ~> (("text" ^^^ TextMessageFormatter) | "json" ^^^ JsonMessageFormatter.standard | "cjson" ^^^ JsonMessageFormatter.compact) map actions.SetFormat
 
   private lazy val Status: Parser[Action] =
     token("status") ^^^ actions.LastStatus
