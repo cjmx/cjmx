@@ -69,7 +69,13 @@ object Beans extends ToRichMBeanServerConnection {
    * map of attributes will be: `Map(AttributeName("Name") -> "mapped", ...)`
    */
   case class Result(name: ObjectName,
+                    classname: String,
                     attributes: Map[AttributeName,AnyRef]) {
+
+    def getNameKeys: Set[ObjectNameKey] = {
+      val tbl = name.getKeyPropertyList
+      tbl.keySet.asScala.map(ObjectNameKey(_)).toSet
+    }
 
     /** Extract a property from the `ObjectName` for this `Result`. */
     def getNameProperty(k: ObjectNameKey): Option[String] =
@@ -81,10 +87,10 @@ object Beans extends ToRichMBeanServerConnection {
 
     /** Update the value associated with the given attribute. */
     def update[A](k: AttributeName, value: A): Result =
-      Result(name, attributes.updated(k, value.asInstanceOf[AnyRef]))
+      this.copy(attributes = this.attributes.updated(k, value.asInstanceOf[AnyRef]))
 
     /** Add the attributes of `r` to this result's attributes. */
-    def union(r: Result): Result = Result(name, attributes ++ r.attributes)
+    def union(r: Result): Result = this.copy(attributes = this.attributes ++ r.attributes)
   }
 
   // use foo:type to refer to an ObjectName key
@@ -117,7 +123,7 @@ object Beans extends ToRichMBeanServerConnection {
     }
   }
 
-  case class Field[A](extract: Row => Option[A]) {
+  case class Field[+A](extract: Row => Option[A]) {
 
     // going to hold off on making Field a Monad, restricting its algebra to what
     // is provided here, in case we want to provide an initial encoding of this type
@@ -145,84 +151,91 @@ object Beans extends ToRichMBeanServerConnection {
         case _ => None
       }}
 
-    def +[N](f: Field[A])(implicit toN: A =:= N, N: Numeric[N]): Field[N] =
+    def +[B>:A,N](f: Field[B])(implicit toN: B =:= N, N: Numeric[N]): Field[N] =
       Field { row => O.apply2(this.extract(row).map(toN), f.extract(row).map(toN))(N.plus) }
 
-    def -[N](f: Field[A])(implicit toN: A =:= N, N: Numeric[N]): Field[N] =
+    def -[B>:A,N](f: Field[B])(implicit toN: B =:= N, N: Numeric[N]): Field[N] =
       Field { row => O.apply2(this.extract(row).map(toN), f.extract(row).map(toN))(N.minus) }
 
-    def *[N](f: Field[A])(implicit toN: A =:= N, N: Numeric[N]): Field[N] =
+    def *[B>:A,N](f: Field[B])(implicit toN: B =:= N, N: Numeric[N]): Field[N] =
       Field { row => O.apply2(this.extract(row).map(toN), f.extract(row).map(toN))(N.times) }
 
-    def /[N](f: Field[A])(implicit toN: A =:= N, N: Fractional[N]): Field[N] =
+    def /[B>:A,N](f: Field[B])(implicit toN: B =:= N, N: Fractional[N]): Field[N] =
       Field { row => O.apply2(this.extract(row).map(toN), f.extract(row).map(toN))(N.div) }
 
-    def negate[N](implicit toN: A =:= N, N: Numeric[N]): Field[N] =
+    def negate[B>:A,N](implicit toN: B =:= N, N: Numeric[N]): Field[N] =
       Field { row => this.extract(row).map(toN).map(N.negate) }
 
-    def &&(f: Field[A])(implicit toBool: A =:= Boolean): Field[Boolean] =
+    def &&[B>:A](f: Field[B])(implicit toBool: B =:= Boolean): Field[Boolean] =
       Field { row => O.apply2(this.extract(row).map(toBool), f.extract(row).map(toBool))(_ && _) }
-    def and(f: Field[A])(implicit toBool: A =:= Boolean): Field[Boolean] =
+    def and[B>:A](f: Field[B])(implicit toBool: B =:= Boolean): Field[Boolean] =
       this && f
 
-    def ||(f: Field[A])(implicit toBool: A =:= Boolean): Field[Boolean] =
+    def ||[B>:A](f: Field[B])(implicit toBool: B =:= Boolean): Field[Boolean] =
       Field { row => O.apply2(this.extract(row).map(toBool), f.extract(row).map(toBool))(_ || _) }
-    def or(f: Field[A])(implicit toBool: A =:= Boolean): Field[Boolean] =
+    def or[B>:A](f: Field[B])(implicit toBool: B =:= Boolean): Field[Boolean] =
       this || f
 
-    def xor(f: Field[A])(implicit toBool: A =:= Boolean): Field[Boolean] =
+    def not[B>:A](implicit toBool: B =:= Boolean): Field[Boolean] =
+      Field { row => this.extract(row).map(toBool).map(!_) }
+
+    def xor[B>:A](f: Field[B])(implicit toBool: B =:= Boolean): Field[Boolean] =
       Field { row => O.apply2(this.extract(row).map(toBool), f.extract(row).map(toBool))((a,b) => (a && !b) || (!a && b)) }
 
     /** Returns true if this field's value is less than `f`. */
-    def <(f: Field[A])(implicit A: Ordering[A]): Field[Boolean] =
+    def <[B>:A](f: Field[B])(implicit A: Ordering[B]): Field[Boolean] =
       Field { row => O.apply2(this.extract(row), f.extract(row))(A.lt) }
 
     /** Returns true if this field's value is greater than `f`. */
-    def >(f: Field[A])(implicit A: Ordering[A]): Field[Boolean] =
+    def >[B>:A](f: Field[B])(implicit A: Ordering[B]): Field[Boolean] =
       Field { row => O.apply2(this.extract(row), f.extract(row))(A.gt) }
 
     /** Returns true if this field's value is greater than or equal to `f`. */
-    def >=(f: Field[A])(implicit A: Ordering[A]): Field[Boolean] =
+    def >=[B>:A](f: Field[B])(implicit A: Ordering[B]): Field[Boolean] =
       Field { row => O.apply2(this.extract(row), f.extract(row))(A.gteq) }
 
     /** Returns true if this field's value is less than or equal to `f`. */
-    def <=(f: Field[A])(implicit A: Ordering[A]): Field[Boolean] =
+    def <=[B>:A](f: Field[B])(implicit A: Ordering[B]): Field[Boolean] =
       Field { row => O.apply2(this.extract(row), f.extract(row))(A.lteq) }
 
     /** Returns true if this field's value is equal to `f`, using Object equality. */
-    def ===(f: Field[A]): Field[Boolean] =
+    def ===[B>:A](f: Field[B]): Field[Boolean] =
       Field { row => O.apply2(this.extract(row), f.extract(row))(_ == _) }
 
+    /** Returns true if this field's value is not equal to `f`, using Object equality. */
+    def !==[B>:A](f: Field[B]): Field[Boolean] =
+      (this === f).not
+
     /** Returns true if this field's value is `>= lower` and `<= upper`. */
-    def between(lower: Field[A], upper: Field[A])(implicit A: Ordering[A]): Field[Boolean] =
+    def between[B>:A](lower: Field[B], upper: Field[B])(implicit A: Ordering[B]): Field[Boolean] =
       Field { row => O.apply3(this.extract(row), lower.extract(row), upper.extract(row))(
         (v,low,hi) => A.lteq(v, hi) && A.gteq(v, low))
       }
 
     /** Returns true if this field's value matches the value of any of the provided fields. */
-    def in(fs: Field[A]*): Field[Boolean] =
+    def in[B>:A](fs: Field[B]*): Field[Boolean] =
       Field { row =>
         this.extract(row).map { target => fs.flatMap(f => f.extract(row).toList).exists(_ == target) }
       }
 
     /** Returns true if this field's value is prefixed by the value of `f`. */
-    def startsWith(f: Field[A])(implicit toS: A =:= String): Field[Boolean] =
+    def startsWith[B>:A](f: Field[B])(implicit toS: B =:= String): Field[Boolean] =
       Field { row => O.apply2(this.extract(row), f.extract(row))(_ startsWith _) }
 
     /** Returns true if this field's value is has a suffix of the value of `f`. */
-    def endsWith(f: Field[A])(implicit toS: A =:= String): Field[Boolean] =
+    def endsWith[B>:A](f: Field[B])(implicit toS: B =:= String): Field[Boolean] =
       Field { row => O.apply2(this.extract(row), f.extract(row))(_ endsWith _) }
 
     /** Returns true if this field's value is a substring of the value of `f`. */
-    def isSubstringOf(f: Field[A])(implicit toS: A =:= String): Field[Boolean] =
+    def isSubstringOf[B>:A](f: Field[B])(implicit toS: B =:= String): Field[Boolean] =
       Field { row => O.apply2(this.extract(row), f.extract(row))((sub,word) => word.indexOf(sub) >= 0) }
 
     /** Returns true if this field's value matches the glob pattern given by `glob`. */
-    def like(glob: Field[A])(implicit toS: A =:= String): Field[Boolean] =
+    def like[B>:A](glob: Field[B])(implicit toS: B =:= String): Field[Boolean] =
       Field { row => O.apply2(this.extract(row), glob.extract(row))((word, pat) => compileGlob(pat)(word)) }
 
     /** Try extracting this field's value, and if that fails, try `f`. */
-    def orElse(f: Field[A]): Field[A] =
+    def orElse[B>:A](f: Field[B]): Field[B] =
       Field { row => this.extract(row) orElse f.extract(row) }
 
     /** Combine the results of this field and `f` using the function `g`. */
@@ -233,7 +246,7 @@ object Beans extends ToRichMBeanServerConnection {
   object Field {
 
     /** A field which looks up the given attribute in the given subquery. */
-    def attribute(subquery: SubqueryName, key: AttributeName): Field[AnyRef] =
+    def attribute(subquery: SubqueryName, key: AttributeName): Field[Any] =
       Field { row => row.get(subquery).map(_.attributes.get(key)) }
 
     /** A field which looks up the given `ObjectName` property in the given subquery. */
@@ -243,8 +256,12 @@ object Beans extends ToRichMBeanServerConnection {
     /** Promote an `A` to a `Field[A]`. */
     def literal[A](a: A): Field[A] = Field { _ => Some(a) }
 
+    /** Returns `true` if the classname for the given subquery matches `classname`. */
+    def classnameEquals(subquery: SubqueryName, classname: String): Field[Boolean] =
+      Field { row => row.get(subquery).map(_.classname == classname) }
+
     /** Promote a path into a bean to a `Field`. */
-    def path(subquery: SubqueryName, path: List[ObjectNameKey \/ AttributeName]): Field[AnyRef] =
+    def path(subquery: SubqueryName, path: List[ObjectNameKey \/ AttributeName]): Field[Any] =
       // we assume that the full bean is loaded, and any sub-beans have been converted to nested Map[AttributeName,AnyRef]
       Field { row =>
         row.get(subquery).flatMap { res =>
@@ -297,6 +314,13 @@ object Beans extends ToRichMBeanServerConnection {
   case class Results(subqueries: Map[SubqueryName, Seq[Result]]) {
     def names: Set[ObjectName] = subqueries.values.flatMap(results => results.map(_.name)).toSet
     def results: Seq[Result] = subqueries.values.flatten.toSeq
+
+    def qualifiedNames: Set[String] = ???
+      //subqueries.flatMap { case (k,rs) =>
+      //  rs.attributes.keySet.map { attr => if (k == unnamed) attr.name else k.get+"."+attr.name }
+      //}.toSet ++
+      //subqueries.flatMap { case (k,rs) => rs.map
+      //}
   }
 
   /** Run the query on the given result set. */

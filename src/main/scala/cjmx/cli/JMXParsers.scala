@@ -22,6 +22,7 @@ import cjmx.ext.AttributePathValueExp
 import cjmx.util.Math.liftToBigDecimal
 import cjmx.util.jmx.{JMX, MBeanQuery}
 import cjmx.util.jmx.JMX._
+import cjmx.util.jmx.Beans.{Field,Results,SubqueryName,unnamed}
 
 
 object JMXParsers {
@@ -135,31 +136,28 @@ object JMXParsers {
   }
 
 
-  def QueryExpParser(svr: MBeanServerConnection, name: ObjectName): Parser[QueryExp] = {
-    val attributeNames = safely(Set.empty[String]) {
-      svr.toScala.queryNames(Some(name), None).flatMap { n =>
-        svr.getMBeanInfo(n).getAttributes.map { _.getName }.toSet
-      }
-    }
-    new QueryExpProductions(attributeNames).Query
-  }
+  def QueryExpParser(results: Results): Parser[Field[Boolean]] =
+    new QueryExpProductions(results).Query
 
-  private class QueryExpProductions(attributeNames: Set[String]) {
+  private class QueryExpProductions(results: Results) {
+
+    val attributeNames: Set[String] = results.qualifiedNames
+
     import javax.management.{Query => Q}
 
-    lazy val Query: Parser[QueryExp] =
+    lazy val Query: Parser[Field[Boolean]] =
       (AndQuery ~ (
-        (ws.* ~> token("or ") ~> ws.* ~> AndQuery <~ ws.*) map { q => Q.or(_: QueryExp, q) }
+        (ws.* ~> token("or ") ~> ws.* ~> AndQuery <~ ws.*) map { q2 => (q1: Field[Boolean]) => q1 || q2 }
       ).*) map { case p ~ seq => seq.foldLeft(p) { (acc, q) => q(acc) } }
 
-    lazy val AndQuery: Parser[QueryExp] =
+    lazy val AndQuery: Parser[Field[Boolean]] =
       (Predicate ~ (
-        (ws.* ~> token("and ") ~> ws.* ~> Predicate <~ ws.*) map { q => Q.and(_: QueryExp, q) }
+        (ws.* ~> token("and ") ~> ws.* ~> Predicate <~ ws.*) map { q2 => (q1: Field[Boolean]) => q1 || q2 }
       ).*) map { case p ~ seq => seq.foldLeft(p) { (acc, q) => q(acc) } }
 
     lazy val Not = token("not ") <~ ws.* ^^^ true
 
-    lazy val Predicate: Parser[QueryExp] = {
+    lazy val Predicate: Parser[Field[Boolean]] = {
       Parenthesized(Query).examples("(<predicate>)") |
       NotPredicate |
       InstanceOf |
@@ -167,94 +165,92 @@ object JMXParsers {
     }
 
     lazy val NotPredicate =
-      (Not flatMap { _ => Predicate }).map(Q.not).examples("not <predicate>")
+      (Not flatMap { _ => Predicate }).map(_.not).examples("not <predicate>")
+
+    lazy val Subquery: Parser[SubqueryName] =
+      ???
 
     lazy val InstanceOf =
-      (token("instanceof ") ~> (token(ws.* ~> StringLiteral)).examples("'<type name>'")).map(Q.isInstanceOf)
+      (Subquery.? ~ (token("instanceof ") ~> (token(ws.* ~> StringValue)).examples("'<type name>'"))).map {
+        case sub ~ classname => Field.classnameEquals(sub.getOrElse(unnamed), classname)
+      }
 
     lazy val ValuePredicate =
       (token(Value) flatMap { lhs => ws.* ~> {
-        val dependentOnOnlyValueExp =
-          RelationalOperation(lhs) | (ws.+ ~> (Negatable(Between(lhs)) | Negatable(In(lhs))))
-        lhs match {
-          case av: AttributeValueExp =>
-            dependentOnOnlyValueExp | (ws.+ ~> (Negatable(Match(av)) | Negatable(SubString(av))))
-          case _ =>
-            dependentOnOnlyValueExp
-        }
+        RelationalOperation(lhs) | (ws.+ ~> (Negatable(Between(lhs)) | Negatable(In(lhs))))
       }})
 
-    def RelationalOperation(lhs: ValueExp) = {
-      def binaryOp(op: String, f: (ValueExp, ValueExp) => QueryExp): Parser[QueryExp] =
+    def RelationalOperation(lhs: Field[Any]) = {
+      def binaryOp(op: String, f: (Field[Any], Field[Any]) => Field[Boolean]): Parser[Field[Boolean]] =
         token(op) ~> ws.* ~> Value map { rhs => f(lhs, rhs) }
-      binaryOp("=", Q.eq) |
-      binaryOp("<", Q.lt) |
-      binaryOp(">", Q.gt) |
-      binaryOp("<=", Q.leq) |
-      binaryOp(">=", Q.geq) |
-      binaryOp("!=", (lhs, rhs) => Q.not(Q.eq(lhs, rhs)))
+      binaryOp("=", _ === _) |
+      binaryOp("<", (a,b) => a.asNumber < b.asNumber) |
+      binaryOp(">", (a,b) => a.asNumber > b.asNumber) |
+      binaryOp("<=", (a,b) => a.asNumber <= b.asNumber) |
+      binaryOp(">=", (a,b) => a.asNumber >= b.asNumber) |
+      binaryOp("!=", (a,b) => a !== b)
     }
 
-    def Negatable(p: Parser[QueryExp]): Parser[QueryExp] =
+    def Negatable(p: Parser[Field[Boolean]]): Parser[Field[Boolean]] =
       Not.? ~ p map {
-        case Some(true) ~ q => Q.not(q)
+        case Some(true) ~ q => q.not
         case _ ~ q => q
       }
 
-    def Between(lhs: ValueExp) = for {
+    def Between(lhs: Field[Any]) = for {
       _ <- token("between ") <~ ws.*
       low <- Value <~ ws.* <~ token("and ") <~ ws.*
       hi <- Value
-    } yield Q.between(lhs, low, hi)
+    } yield lhs.asNumber.between(low.asNumber, hi.asNumber)
 
-    def In(lhs: ValueExp) = for {
+    def In(lhs: Field[Any]) = for {
       _ <- token("in ") <~ ws.* <~ token("(")
       values <- repsep(Value, ws.* ~ ',' ~ ws.*)
       _ <- ws.* ~ token(")")
-    } yield Q.in(lhs, values.toArray)
+    } yield lhs.in(values: _*)
 
-    def Match(lhs: AttributeValueExp) = for {
+    def Match(lhs: Field[Any]) = for {
       _ <- token("like ") <~ ws.*
       pat <- StringLiteral
-    } yield Q.`match`(lhs, pat)
+    } yield lhs.as[String].like(pat)
 
-    def SubString(lhs: AttributeValueExp) =
+    def SubString(lhs: Field[Any]) =
       InitialSubString(lhs) | FinalSubString(lhs) | AnySubString(lhs)
 
-    def InitialSubString(lhs: AttributeValueExp) = for {
+    def InitialSubString(lhs: Field[Any]) = for {
       _ <- token("startsWith ") <~ ws.*
       ss <- StringLiteral
-    } yield Q.initialSubString(lhs, ss)
+    } yield lhs.as[String].startsWith(ss)
 
-    def FinalSubString(lhs: AttributeValueExp) = for {
+    def FinalSubString(lhs: Field[Any]) = for {
       _ <- token("endsWith ") <~ ws.*
       ss <- StringLiteral
-    } yield Q.finalSubString(lhs, ss)
+    } yield lhs.as[String].endsWith(ss)
 
-    def AnySubString(lhs: AttributeValueExp) = for {
+    def AnySubString(lhs: Field[Any]) = for {
       _ <- token("contains ") <~ ws.*
       ss <- StringLiteral
-    } yield Q.anySubString(lhs, ss)
+    } yield ss.isSubstringOf(lhs.as[String])
 
-    lazy val Value: Parser[ValueExp] = new ExpressionParser {
-      override type Expression = ValueExp
-      override def multiply(lhs: ValueExp, rhs: ValueExp) = Q.times(lhs, rhs)
-      override def divide(lhs: ValueExp, rhs: ValueExp) = Q.div(lhs, rhs)
-      override def add(lhs: ValueExp, rhs: ValueExp) = Q.plus(lhs, rhs)
-      override def subtract(lhs: ValueExp, rhs: ValueExp) = Q.minus(lhs, rhs)
+    lazy val Value: Parser[Field[Any]] = new ExpressionParser {
+      override type Expression = Field[Any]
+      override def multiply(lhs: Expression, rhs: Expression) = lhs.asNumber * rhs.asNumber
+      override def divide(lhs: Expression, rhs: Expression) = lhs.asNumber / rhs.asNumber
+      override def add(lhs: Expression, rhs: Expression) = lhs.asNumber + rhs.asNumber
+      override def subtract(lhs: Expression, rhs: Expression) = lhs.asNumber - rhs.asNumber
       override lazy val Value = Attribute | Literal
     }.Expr.examples(Set("<value>", "<attribute>") ++ attributeNames)
 
-    lazy val Attribute = (NonQualifiedAttribute | QualifiedAttribute | AttributePath).examples("<attribute>")
+    lazy val Attribute = (NonQualifiedAttribute | QualifiedAttribute | AttributePath).examples("<attribute>") ^^^ Field.literal("todo")
     lazy val NonQualifiedAttribute = Identifier(DQuoteChar) map Q.attr
     lazy val QualifiedAttribute = (rep1sep(JavaIdentifier, '.') <~ '#') ~ JavaIdentifier map { case clsParts ~ attr => Q.attr(clsParts.mkString("."), attr) }
     lazy val AttributePath = rep1sep(Identifier(DQuoteChar), '.') map { parts => new AttributePathValueExp(parts.head, new java.util.ArrayList(parts.tail.asJava)) }
 
     lazy val Literal = BooleanLiteral | LongLiteral | DoubleLiteral | StringLiteral
-    lazy val BooleanLiteral = BooleanValue map Q.value
-    lazy val LongLiteral = LongValue map Q.value
-    lazy val DoubleLiteral = DoubleValue map Q.value
-    lazy val StringLiteral = StringValue map Q.value
+    lazy val BooleanLiteral = BooleanValue map (Field.literal)
+    lazy val LongLiteral = LongValue map (Field.literal)
+    lazy val DoubleLiteral = DoubleValue map (Field.literal)
+    lazy val StringLiteral = StringValue map (Field.literal)
   }
 
 
