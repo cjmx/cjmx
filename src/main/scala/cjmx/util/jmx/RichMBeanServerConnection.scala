@@ -7,7 +7,7 @@ import scalaz.syntax.Ops
 
 import java.rmi.UnmarshalException
 import javax.management._
-import Beans.{Results, SubqueryName}
+import Beans.{Results, SubqueryName, unnamed}
 
 trait RichMBeanServerConnection extends Ops[MBeanServerConnection] {
 
@@ -21,6 +21,9 @@ trait RichMBeanServerConnection extends Ops[MBeanServerConnection] {
 
   def results(queries: Map[SubqueryName, ObjectName]): Results =
     sys.error("todo")
+
+  def allResults: Results =
+    results(Map(unnamed -> ObjectName.WILDCARD))
 
   def mbeanInfo(name: ObjectName): Option[MBeanInfo] =
     Option(self.getMBeanInfo(name))

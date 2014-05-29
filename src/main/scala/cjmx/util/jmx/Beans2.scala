@@ -30,7 +30,7 @@ object Beans extends ToRichMBeanServerConnection {
    * which has a value of `"BufferPool"`, and `name`, which has a value of `"direct"`.
    */
   case class ObjectNameKey(key: String) {
-    def get(name: ObjectName): Option[String] = ???
+    def get(name: ObjectName): Option[String] = sys.error("todo")
   }
 
   /**
@@ -125,9 +125,14 @@ object Beans extends ToRichMBeanServerConnection {
 
   case class Field[+A](extract: Row => Option[A]) {
 
-    // going to hold off on making Field a Monad, restricting its algebra to what
-    // is provided here, in case we want to provide an initial encoding of this type
-    // for sending to the server
+    def pmap2[B,C](f: Field[B])(g: (A,B) => Option[C]): Field[C] =
+      Field { row => O.apply2(this.extract(row), f.extract(row))(g).flatMap(x => x) }
+
+    def map2[B,C](f: Field[B])(g: (A,B) => C): Field[C] =
+      Field { row => O.apply2(this.extract(row), f.extract(row))(g) }
+
+    def map[B](f: A => B): Field[B] =
+      Field { row => this.extract(row).map(f) }
 
     /** Cast this `Field[A]` to a `Field[B]`. */
     def as[B](implicit B: Manifest[B]): Field[B] =
@@ -309,13 +314,16 @@ object Beans extends ToRichMBeanServerConnection {
      */
     def join(p1: Projection, p2: Projection): Projection =
       p1.zipWith(p2) { _ join _ }
+
+    def fromFields(fs: Field[(String,Any)]*): Projection =
+      sys.error("todo")
   }
 
   case class Results(subqueries: Map[SubqueryName, Seq[Result]]) {
     def names: Set[ObjectName] = subqueries.values.flatMap(results => results.map(_.name)).toSet
     def results: Seq[Result] = subqueries.values.flatten.toSeq
 
-    def qualifiedNames: Set[String] = ???
+    def qualifiedNames: Set[String] = sys.error("todo")
       //subqueries.flatMap { case (k,rs) =>
       //  rs.attributes.keySet.map { attr => if (k == unnamed) attr.name else k.get+"."+attr.name }
       //}.toSet ++

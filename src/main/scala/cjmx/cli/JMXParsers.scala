@@ -22,7 +22,8 @@ import cjmx.ext.AttributePathValueExp
 import cjmx.util.Math.liftToBigDecimal
 import cjmx.util.jmx.{JMX, MBeanQuery}
 import cjmx.util.jmx.JMX._
-import cjmx.util.jmx.Beans.{Field,Results,SubqueryName,unnamed}
+import cjmx.util.jmx.Beans.{Field,Projection,Results,SubqueryName,unnamed}
+import cjmx.util.jmx.Beans
 
 
 object JMXParsers {
@@ -255,86 +256,65 @@ object JMXParsers {
   }
 
 
-  def Projection(svr: MBeanServerConnection, query: Option[MBeanQuery]): Parser[Seq[Attribute] => Seq[Attribute]] = {
-    val getAttributeNames = svr.getMBeanInfo(_: ObjectName).getAttributes.map { _.getName }.toSet
-    val attributeNames = query.cata(q => safely(Set.empty[String]) { svr.toScala.queryNames(q).flatMap(getAttributeNames) }, Set.empty[String])
-    new ProjectionProductions(attributeNames).Projection
+  def Projection(svr: MBeanServerConnection, query: Option[MBeanQuery]): Parser[Projection] = {
+    new ProjectionProductions(query.map(_.results).getOrElse(svr.allResults)).Projection
   }
 
-  private class ProjectionProductions(attributeNames: Set[String]) {
+  private class ProjectionProductions(results: Results) {
+
+    import scalaz.std.option._
+    val O = Monad[Option]
+
+    val attributeNames: Set[String] = sys.error("todo some function of results")
 
     lazy val Projection = {
-      (token("*") ^^^ (identity[Seq[Attribute]] _)) |
+      (token("*") ^^^ Beans.Projection.all) |
       (rep1sep(Attribute, ws.* ~ ',' ~ ws.*) map { attrMappings =>
-        (attrs: Seq[Attribute]) => {
-          val attrsAsMap = attrs.map { attr => attr.getName -> attr.getValue }.toMap
-          attrMappings.foldLeft(Seq.empty[Attribute]) { (acc, mapping) =>
-            val attr = mapping(attrsAsMap).map { case (k, v) => new Attribute(k, v) }
-            attr.cata(a => acc :+ a, acc)
-          }
-        }
+        Beans.Projection.fromFields(attrMappings: _*)
       })
     }
 
-    lazy val Attribute: Parser[Map[String, AnyRef] => Option[(String, AnyRef)]] =
+    lazy val Attribute: Parser[Field[(String,Any)]] =
       token(UnnamedAttribute) ~ (token(" as ") ~> Identifier(SQuoteChar, DQuoteChar)).? map {
-        case f ~ Some(t) => attrs => f(attrs) map { case (_, v) => (t, v) }
+        case f ~ Some(t) => f map { case (_, v) => (t, v) }
         case f ~ None => f
       }
 
-    lazy val UnnamedAttribute: Parser[Map[String, AnyRef] => Option[(String, AnyRef)]] = new ExpressionParser {
-      override type Expression = Map[String, AnyRef] => Option[(String, AnyRef)]
-      override def multiply(lhs: Expression, rhs: Expression) = attrs => apply(Ops.Multiplication, attrs, lhs, rhs)
-      override def divide(lhs: Expression, rhs: Expression) = attrs => apply(Ops.Division, attrs, lhs, rhs)
-      override def add(lhs: Expression, rhs: Expression) = attrs => apply(Ops.Addition, attrs, lhs, rhs)
-      override def subtract(lhs: Expression, rhs: Expression) = attrs => apply(Ops.Subtraction, attrs, lhs, rhs)
+    lazy val UnnamedAttribute: Parser[Field[(String,Any)]] = new ExpressionParser {
+      override type Expression = Field[(String,Any)]
+      override def multiply(lhs: Expression, rhs: Expression) =
+        lhs.pmap2(rhs) { (a,b) =>
+          O.apply2(liftToBigDecimal(a._2), liftToBigDecimal(b._2))(_ * _).map((a._1 + " * " + b._1, _))
+        }
+
+      override def divide(lhs: Expression, rhs: Expression) =
+        lhs.pmap2(rhs) { (a,b) =>
+          O.apply2(liftToBigDecimal(a._2), liftToBigDecimal(b._2))(_ / _).map((a._1 + " / " + b._1, _))
+        }
+      override def add(lhs: Expression, rhs: Expression) =
+        lhs.pmap2(rhs) { (a,b) =>
+          O.apply2(liftToBigDecimal(a._2), liftToBigDecimal(b._2))(_ + _).map((a._1 + " + " + b._1, _))
+        }
+      override def subtract(lhs: Expression, rhs: Expression) =
+        lhs.pmap2(rhs) { (a,b) =>
+          O.apply2(liftToBigDecimal(a._2), liftToBigDecimal(b._2))(_ - _).map((a._1 + " - " + b._1, _))
+        }
       private lazy val SimpleValue: Parser[Expression] =
-        (IntValue | LongValue | DoubleValue) map { v => (attrs: Map[String, AnyRef]) => Option((v.toString, v.asInstanceOf[AnyRef])) }
+        (IntValue | LongValue | DoubleValue) map { v => Field.literal(v.toString -> v) }
       override lazy val Value = SimpleAttribute | SimpleValue
 
-      private sealed trait Op {
-        def name: String
-        def apply(x: BigDecimal, y: BigDecimal): BigDecimal
-      }
-
-      private object Ops {
-        object Multiplication extends Op {
-          def name = "*"
-          def apply(x: BigDecimal, y: BigDecimal) = x * y
-        }
-
-        object Division extends Op {
-          def name = "/"
-          def apply(x: BigDecimal, y: BigDecimal) = x / y
-        }
-
-        object Addition extends Op {
-          def name = "+"
-          def apply(x: BigDecimal, y: BigDecimal) = x + y
-        }
-
-        object Subtraction extends Op {
-          def name = "-"
-          def apply(x: BigDecimal, y: BigDecimal) = x - y
-        }
-      }
-
-      private def apply(op: Op, attrs: Map[String, AnyRef], lhs: Expression, rhs: Expression) = {
-        for {
-          (leftName, leftValue) <- lhs(attrs)
-          (rightName, rightValue) <- rhs(attrs)
-          result <- ^(liftToBigDecimal(leftValue), liftToBigDecimal(rightValue))(op.apply)
-        } yield ("%s %s %s".format(leftName, op.name, rightName), result)
-      }
     }.Expr.examples(Set("<value>", "<attribute>") ++ attributeNames)
 
-    lazy val SimpleAttribute: Parser[Map[String, AnyRef] => Option[(String, AnyRef)]] =
-      (rep1sep(Identifier(SQuoteChar, DQuoteChar), '.') map { ids =>
-        attrs => (for {
-          hv <- attrs.get(ids.head)
-          v <- JMX.extractValue(hv, ids.tail)
-        } yield (ids.mkString(".") -> v))
-      })
+    // todo - generalize this to work on subqueries
+    lazy val SimpleAttribute: Parser[Field[(String,Any)]] =
+      rep1sep(Identifier(SQuoteChar, DQuoteChar), '.') map { ids =>
+        sys.error("todo")
+      }
+      //  attrs => (for {
+      //    hv <- attrs.get(ids.head)
+      //    v <- JMX.extractValue(hv, ids.tail)
+      //  } yield (ids.mkString(".") -> v))
+      //})
   }
 
   def Invocation(svr: MBeanServerConnection, query: Option[MBeanQuery]): Parser[(String, Seq[AnyRef])] =
