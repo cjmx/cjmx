@@ -13,6 +13,7 @@ import scala.collection.JavaConverters._
 import javax.management._
 
 import cjmx.util.jmx.MBeanQuery
+import cjmx.util.jmx.Beans.{unnamed, Field}
 import JMXParsers._
 
 
@@ -63,11 +64,12 @@ object Parsers {
   private def MBeanQueryP(svr: MBeanServerConnection): Parser[MBeanQuery] =
     for {
       name <- QuotedObjectNameParser(svr)
-      query <- (token(" where ") ~> JMXParsers.QueryExpParser(svr, name)).?
-    } yield MBeanQuery(Some(name), query)
+      val results = svr.results(name) // need to load results in here, and save them
+      query <- (token(" where ") ~> JMXParsers.QueryExpParser(results)).?
+    } yield MBeanQuery(results, query.getOrElse(Field.literal(true)))
 
   private def PrefixNames(svr: MBeanServerConnection): Parser[actions.ManagedObjectNames] =
-    (token("names") ^^^ actions.ManagedObjectNames(MBeanQuery.All)) |
+    (token("names") ^^^ actions.ManagedObjectNames(Map(unnamed -> ObjectName.WILDCARD), Field.literal(true))) |
     (token("names ") ~> MBeanQueryP(svr) map { case query => actions.ManagedObjectNames(query) })
 
   private def PostfixNames(svr: MBeanServerConnection, query: MBeanQuery): Parser[actions.ManagedObjectNames] =

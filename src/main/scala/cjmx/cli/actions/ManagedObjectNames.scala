@@ -6,6 +6,7 @@ import scalaz.syntax.validation._
 import javax.management.{ObjectName, QueryExp}
 
 import cjmx.util.jmx.{JMXConnection, MBeanQuery}
+import cjmx.util.jmx.Beans.{SubqueryName,Field}
 
 
 case class ManagedObjectNames(query: MBeanQuery) extends SimpleConnectedAction {
@@ -13,5 +14,11 @@ case class ManagedObjectNames(query: MBeanQuery) extends SimpleConnectedAction {
     val names = connection.mbeanServer.toScala.queryNames(query).toList.sorted
     context.formatter.formatNames(names)
   }
+}
+
+object ManagedObjectNames {
+
+  def apply(subqueries: Map[SubqueryName, ObjectName], where: Field[Boolean]): ManagedObjectNames =
+    sys.error("todo")
 }
 

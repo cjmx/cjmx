@@ -28,15 +28,16 @@ import cjmx.util.jmx.Beans.{Field,Results,SubqueryName,unnamed}
 object JMXParsers {
   import Parser._
 
-  def QuotedObjectNameParser(svr: MBeanServerConnection): Parser[ObjectName] =
+  def QuotedObjectNameParser(svr: MBeanServerConnection): Parser[Map[SubqueryName,ObjectName]] =
     token('\'') ~> ObjectNameParser(svr) <~ token('\'')
 
-  def ObjectNameParser(svr: MBeanServerConnection): Parser[ObjectName] =
+  // todo: generalize this
+  def ObjectNameParser(svr: MBeanServerConnection): Parser[Map[SubqueryName,ObjectName]] =
     for {
       domain <- token(ObjectNameDomainParser(svr).? <~ ':') map { _ getOrElse "" }
       builder <- ObjectNameProductions.Properties(svr, ObjectNameBuilder(domain))
       oname <- builder.oname.fold(e => Parser.failure("invalid object name: " + e), n => Parser.success(n))
-    } yield oname
+    } yield Map(unnamed -> oname)
 
   def ObjectNameDomainParser(svr: MBeanServerConnection): Parser[String] =
     (charClass(_ != ':', "object name domain").+).string.examples(svr.getDomains: _*)

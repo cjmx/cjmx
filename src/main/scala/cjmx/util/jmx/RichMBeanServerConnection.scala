@@ -7,7 +7,7 @@ import scalaz.syntax.Ops
 
 import java.rmi.UnmarshalException
 import javax.management._
-
+import Beans.{Results, SubqueryName}
 
 trait RichMBeanServerConnection extends Ops[MBeanServerConnection] {
 
@@ -17,7 +17,10 @@ trait RichMBeanServerConnection extends Ops[MBeanServerConnection] {
     self.queryNames(name.orNull, query.orNull).asScala.toSet
 
   def queryNames(query: MBeanQuery): Set[ObjectName] =
-    queryNames(query.from, query.where)
+    query.results.subqueries.values.flatMap(_.map(_.name)).toSet
+
+  def results(queries: Map[SubqueryName, ObjectName]): Results =
+    sys.error("todo")
 
   def mbeanInfo(name: ObjectName): Option[MBeanInfo] =
     Option(self.getMBeanInfo(name))
