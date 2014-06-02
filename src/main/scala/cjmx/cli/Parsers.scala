@@ -11,7 +11,8 @@ import scala.collection.JavaConverters._
 
 import javax.management._
 
-import cjmx.util.jmx.{ MBeanQuery, JMXTags }
+import cjmx.util.jmx._
+import cjmx.util.jmx.Beans.{unnamed, Field, Projection}
 import JMXParsers._
 
 
@@ -62,11 +63,12 @@ object Parsers {
   private def MBeanQueryP(svr: MBeanServerConnection): Parser[MBeanQuery] =
     for {
       name <- QuotedObjectNameParser(svr)
-      query <- (token(" where ") ~> JMXParsers.QueryExpParser(svr, name)).?
-    } yield MBeanQuery(Some(name), query)
+      val results = svr.results(name) // need to load results in here, and save them
+      query <- (token(" where ") ~> JMXParsers.QueryExpParser(results)).?
+    } yield MBeanQuery(results, query.getOrElse(Field.literal(true)))
 
   private def PrefixNames(svr: MBeanServerConnection): Parser[actions.ManagedObjectNames] =
-    (token("names") ^^^ actions.ManagedObjectNames(MBeanQuery.All)) |
+    (token("names") ^^^ actions.ManagedObjectNames(Map(unnamed -> ObjectName.WILDCARD), Field.literal(true))) |
     (token("names ") ~> MBeanQueryP(svr) map { case query => actions.ManagedObjectNames(query) })
 
   private def PostfixNames(svr: MBeanServerConnection, query: MBeanQuery): Parser[actions.ManagedObjectNames] =
@@ -92,7 +94,7 @@ object Parsers {
       case projection => actions.Query(query, projection)
     }
 
-  private def SelectClause(svr: MBeanServerConnection, query: Option[MBeanQuery]): Parser[Seq[Attribute] => Seq[Attribute]] =
+  private def SelectClause(svr: MBeanServerConnection, query: Option[MBeanQuery]): Parser[Projection] =
     (token("select ") ~> SpaceClass.* ~> JMXParsers.Projection(svr, query))
 
   private def PrefixSample(svr: MBeanServerConnection): Parser[actions.Sample] =
@@ -105,7 +107,7 @@ object Parsers {
       case projection ~ timing => actions.Sample(actions.Query(query, projection), timing._1, timing._2)
     }
 
-  private def SampleClause(svr: MBeanServerConnection, query: Option[MBeanQuery]): Parser[Seq[Attribute] => Seq[Attribute]] =
+  private def SampleClause(svr: MBeanServerConnection, query: Option[MBeanQuery]): Parser[Projection] =
     (token("sample ") ~> SpaceClass.* ~> JMXParsers.Projection(svr, query))
 
   private def SampleTimingClause: Parser[(Int, Int)] =

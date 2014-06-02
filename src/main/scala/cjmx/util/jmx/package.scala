@@ -4,6 +4,7 @@ import scala.collection.JavaConverters._
 
 import java.rmi.UnmarshalException
 import javax.management._
+import jmx.Beans.{Results, SubqueryName, unnamed}
 
 package object jmx {
 
@@ -15,7 +16,13 @@ package object jmx {
       self.queryNames(name.orNull, query.orNull).asScala.toSet
 
     def queryNames(query: MBeanQuery): Set[ObjectName] =
-      queryNames(query.from, query.where)
+      query.results.subqueries.values.flatMap(_.map(_.name)).toSet
+
+    def results(queries: Map[SubqueryName, ObjectName]): Results =
+      sys.error("todo")
+
+    def allResults: Results =
+      results(Map(unnamed -> ObjectName.WILDCARD))
 
     def mbeanInfo(name: ObjectName): Option[MBeanInfo] =
       Option(self.getMBeanInfo(name))

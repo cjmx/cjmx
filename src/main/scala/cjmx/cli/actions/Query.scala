@@ -7,18 +7,20 @@ import scalaz.syntax.show._
 import javax.management.{Attribute, ObjectName, QueryExp}
 
 import cjmx.util.jmx._
+import cjmx.util.jmx.Beans.Projection
 
 
-case class Query(query: MBeanQuery, projection: Seq[Attribute] => Seq[Attribute] = identity) extends SimpleConnectedAction {
+case class Query(query: MBeanQuery, projection: Projection) extends SimpleConnectedAction {
   def act(context: ActionContext, connection: JMXConnection) = {
-    val svr = connection.mbeanServer
-    val names = svr.toScala.queryNames(query).toList.sorted
-    val namesAndAttrs = names map { name =>
-      val info = svr.getMBeanInfo(name)
-      val attrNames = info.getAttributes map { _.getName }
-      name -> projection(svr.attributes(name, attrNames))
-    }
-    context.formatter.formatAttributes(namesAndAttrs)
+    sys.error("todo")
+    //val svr = connection.mbeanServer
+    //val names = svr.toScala.queryNames(query).toList.sorted
+    //val namesAndAttrs = names map { name =>
+    //  val info = svr.getMBeanInfo(name)
+    //  val attrNames = info.getAttributes map { _.getName }
+    //  name -> projection(svr.attributes(name, attrNames))
+    //}
+    //context.formatter.formatAttributes(namesAndAttrs)
   }
 }
 
