@@ -6,6 +6,7 @@ import scalaz.syntax.validation._
 import javax.management.{ObjectName, Attribute, MBeanInfo}
 
 import cjmx.util.jmx.{JMX, JMXTags}
+import JMX._
 
 
 object TextMessageFormatter extends MessageFormatter {

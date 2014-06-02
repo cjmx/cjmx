@@ -6,9 +6,7 @@ import scalaz.Free.Trampoline
 import scalaz.concurrent.Task
 import scalaz.stream.Process
 
-import cjmx.util.jmx.JMX
-
-package object cli extends JMX {
+package object cli {
   /** A stream of `A` values. */
   type Source[+A] = Process[Task,A]
   type ActionResult = (ActionContext, Source[String])

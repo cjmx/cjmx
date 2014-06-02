@@ -1,7 +1,7 @@
 package cjmx.util.jmx
 
 import scala.collection.JavaConverters._
-import scalaz.\/
+import scalaz.{ \/, @@ }
 import scalaz.syntax.std.option._
 import scalaz.syntax.bifunctor._
 
@@ -9,10 +9,13 @@ import java.io.File
 import javax.management.remote._
 import com.sun.tools.attach._
 
-trait Attach {
+object Attach {
 
   def localVMs: List[VirtualMachineDescriptor] =
     VirtualMachine.list.asScala.toList.sortBy { _.id }
+
+  def localVMIDs: List[String @@ JMXTags.VMID] =
+    localVMs map { vmd => JMXTags.VMID(vmd.id) }
 
   def localConnect(vmid: String): String \/ JMXConnector = for {
     vmd <- localVMs.find { _.id == vmid }.toRightDisjunction("No virtual machine with VM ID %s".format(vmid))
@@ -31,6 +34,4 @@ trait Attach {
     localConnectorAddress.toRightDisjunction("Failed to connect to VM ID %s.".format(vm.id))
   }
 }
-
-object Attach extends Attach
 

@@ -2,32 +2,19 @@ package cjmx.util.jmx
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
-import scala.language.implicitConversions
 
 import scalaz._
 import Scalaz._
 
-import java.lang.management.ManagementFactory
 import javax.management._
 import javax.management.openmbean._
-import javax.management.remote.JMXConnector
 
+/** Provides utilities for working with JMX. */
+object JMX {
 
-object JMXTags {
-  sealed trait Type
-  def Type(t: String): String @@ Type = Tag[String, Type](t)
-
-  sealed trait Value
-  def Value(v: AnyRef): AnyRef @@ Value = Tag[AnyRef, Value](v)
-}
-
-trait JMXConnection {
-  def mbeanServer: MBeanServerConnection
-  def dispose()
-}
-
-trait JMXFunctions {
-  import JMXInstances._
+  implicit val typeShow: Show[String @@ JMXTags.Type] = Show.shows(humanizeType)
+  implicit val valueShow: Show[AnyRef @@ JMXTags.Value] = Show.shows(humanizeValue)
+  implicit val attributeShow: Show[Attribute] = Show.shows(humanizeAttribute)
 
   def humanizeType(t: String): String = {
     try Class.forName(t).getSimpleName
@@ -46,6 +33,34 @@ trait JMXFunctions {
           mkString(newline, newline, "") |> indentLines(2)
       case arr: Array[_] => arr.map { case v: AnyRef => JMXTags.Value(v).shows }.mkString("[", ", ", "]")
       case n if n eq null => "null"
+      case tds: TabularDataSupport =>
+
+        val tabularType = tds.getTabularType
+        val compositeType = tabularType.getRowType
+        val keys = compositeType.keySet.asScala
+
+        val lines = tds.getTabularType.getIndexNames.asScala.toList match {
+          // Optimize tables with single key
+          case uniqueKey :: Nil =>
+            val humanizedMap = tds.values.asScala.toList collect { case value: CompositeData =>
+              val strKey = value.get(uniqueKey).toString
+              val rest = (keys - uniqueKey).toList
+              rest match  {
+                case singleKey :: Nil => strKey -> value.get(singleKey)
+                case _                => strKey -> value.getAll(rest.toArray)
+              }
+            }
+            humanizedMap.sortBy { _._1 }.map { case (key, value) =>
+              s"${key}: ${humanizeValue(value)}"
+            }
+
+          case multipleKeys =>
+            tds.asScala.toList.map { case (_, value) =>
+              humanizeValue(value)
+            }
+        }
+        newline + lines.mkString(newline) |> indentLines(2)
+
       case other => other.toString
     }
   }
@@ -89,37 +104,5 @@ trait JMXFunctions {
   private val newline = "%n".format()
   private def indentLines(indent: Int)(s: String): String =
     s.split(newline).map { s => (" " * indent) + s }.mkString(newline)
-
-  implicit def connectorToConnection(connector: JMXConnector): JMXConnection = new JMXConnection {
-    override def mbeanServer = connector.getMBeanServerConnection
-    override def dispose() = connector.close()
-  }
-
-  def PlatformMBeanServerConnection: JMXConnection = new JMXConnection {
-    override def mbeanServer = ManagementFactory.getPlatformMBeanServer
-    override def dispose() {}
-  }
 }
-
-object JMXFunctions extends JMXFunctions
-
-
-trait JMXInstances {
-  import JMXFunctions._
-
-  implicit val typeShow: Show[String @@ JMXTags.Type] = Show.shows(humanizeType)
-  implicit val valueShow: Show[AnyRef @@ JMXTags.Value] = Show.shows(humanizeValue)
-  implicit val attributeShow: Show[Attribute] = Show.shows(humanizeAttribute)
-}
-
-object JMXInstances extends JMXInstances
-
-
-trait JMX
-  extends JMXInstances
-  with JMXFunctions
-  with ToRichMBeanServerConnection
-  with Attach
-
-object JMX extends JMX
 

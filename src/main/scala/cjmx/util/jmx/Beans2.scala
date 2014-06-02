@@ -5,7 +5,7 @@ import scala.collection.JavaConverters._
 import scalaz.\/
 
 /** Typed API for interacting with MBeans. */
-object Beans extends ToRichMBeanServerConnection {
+object Beans {
 
   private[cjmx] val unnamed = SubqueryName("#0") // used when user does not name the subquery
 

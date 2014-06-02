@@ -21,7 +21,7 @@ import java.rmi.UnmarshalException
 import sbt.LineReader
 import sbt.complete.Parser
 
-import cjmx.util.jmx.JMX
+import cjmx.util.jmx.{ Attach, JMX }
 
 
 object REPL {
@@ -34,7 +34,7 @@ object REPL {
       state.runState match {
         case Running =>
           val parser = state.connectionState match {
-            case Disconnected => Parsers.Disconnected(JMX.localVMs)
+            case Disconnected => Parsers.Disconnected(Attach.localVMIDs)
             case Connected(cnx) => Parsers.Connected(cnx.mbeanServer)
           }
           def readLine = reader(parser).readLine("> ").cata(some, some("exit")).filter { _.nonEmpty }

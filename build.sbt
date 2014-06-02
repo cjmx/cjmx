@@ -9,9 +9,9 @@ organization := "com.github.cjmx"
 
 name := "cjmx"
 
-scalaVersion := "2.10.3"
+scalaVersion := "2.10.4"
 
-crossScalaVersions := Seq("2.10.3")
+crossScalaVersions := Seq("2.10.4")
 
 scalacOptions ++= Seq(
   "-feature",
@@ -39,11 +39,11 @@ resolvers += "Scalaz Bintray Repo" at "http://dl.bintray.com/scalaz/releases"
 
 libraryDependencies ++=
   "com.github.cjmx" % "cjmx-ext" % "1.0.0.RELEASE" ::
-  "org.scalaz" %% "scalaz-core" % "7.0.5" ::
-  "org.scalaz" %% "scalaz-effect" % "7.0.5" ::
-  "org.scala-sbt" % "completion" % "0.13.0" ::
+  "org.scalaz" %% "scalaz-core" % "7.0.6" ::
+  "org.scalaz" %% "scalaz-effect" % "7.0.6" ::
+  "org.scala-sbt" % "completion" % "0.13.5-RC3" ::
   "com.google.code.gson" % "gson" % "2.2.2" ::
-  "org.scalatest" %% "scalatest" % "2.1.0-RC2" % "test" ::
+  "org.scalatest" %% "scalatest" % "2.1.3" % "test" ::
   "org.scalaz.stream" %% "scalaz-stream" % "0.3.1" ::
   Nil
 

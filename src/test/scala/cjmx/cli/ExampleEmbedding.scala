@@ -10,7 +10,7 @@ import scalaz.syntax.std.either._
 import org.scalatest._
 
 import sbt.complete.Parser
-import cjmx.util.jmx.JMX
+import cjmx.util.jmx.JMXConnection
 
 
 class ExampleEmbedding extends FunSuite with Matchers {
@@ -21,7 +21,7 @@ class ExampleEmbedding extends FunSuite with Matchers {
   }
 
   def runMBeanAction(str: String): String \/ Vector[String] = for {
-    cnx <- JMX.PlatformMBeanServerConnection.right
+    cnx <- JMXConnection.PlatformMBeanServerConnection.right
     action <- Parser.parse(str, Parsers.MBeanAction(cnx.mbeanServer)).disjunction
     msgEnum <- {
       val initialCtx = ActionContext(connectionState = Connected(cnx))

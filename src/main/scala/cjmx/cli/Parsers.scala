@@ -7,12 +7,11 @@ import sbt.complete.DefaultParsers._
 import scalaz.{Digit => _, _}
 import Scalaz._
 
-import com.sun.tools.attach.VirtualMachineDescriptor
 import scala.collection.JavaConverters._
 
 import javax.management._
 
-import cjmx.util.jmx.MBeanQuery
+import cjmx.util.jmx._
 import cjmx.util.jmx.Beans.{unnamed, Field, Projection}
 import JMXParsers._
 
@@ -29,21 +28,21 @@ object Parsers {
     (token("help") ~> (' ' ~> any.+.string).?) map { topic => actions.Help(topic) }
 
   private lazy val SetFormat: Parser[Action] =
-    token("format ") ~> (("text" ^^^ TextMessageFormatter) | "json" ^^^ JsonMessageFormatter) map actions.SetFormat
+    token("format ") ~> (("text" ^^^ TextMessageFormatter) | "json" ^^^ JsonMessageFormatter.standard | "cjson" ^^^ JsonMessageFormatter.compact) map actions.SetFormat
 
   private lazy val Status: Parser[Action] =
     token("status") ^^^ actions.LastStatus
 
-  def Disconnected(vms: Seq[VirtualMachineDescriptor]): Parser[Action] =
+  def Disconnected(vms: Seq[String @@ JMXTags.VMID]): Parser[Action] =
     ListVMs | Connect(vms) | GlobalActions !!! "Invalid input"
 
   private val ListVMs: Parser[Action] =
     (token("list") | token("jps")) ^^^ actions.ListVMs
 
-  private def VMID(vms: Seq[VirtualMachineDescriptor]): Parser[String] =
-    token(Digit.+.string.examples(vms.map { _.id.toString }: _*))
+  private def VMID(vms: Seq[String @@ JMXTags.VMID]): Parser[String] =
+    token(Digit.+.string.examples(vms: _*))
 
-  private def Connect(vms: Seq[VirtualMachineDescriptor]): Parser[actions.Connect] =
+  private def Connect(vms: Seq[String @@ JMXTags.VMID]): Parser[actions.Connect] =
     (token("connect" ~> ' ') ~> (token(flag("-q ")) ~ VMID(vms))) map {
       case quiet ~ vmid => actions.Connect(vmid, quiet)
     }

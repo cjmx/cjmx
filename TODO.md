@@ -1,3 +1,2 @@
 - Add help content for query expressions
-- TabularData handling
 - Support for setting attributes (mbeans 'foo:bar' set baz='qux')
