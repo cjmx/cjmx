@@ -11,7 +11,7 @@ name := "cjmx"
 
 scalaVersion := "2.10.4"
 
-crossScalaVersions := Seq("2.10.4")
+crossScalaVersions := Seq("2.10.4", "2.11.1")
 
 scalacOptions ++= Seq(
   "-feature",
@@ -22,8 +22,9 @@ scalacOptions ++= Seq(
   "-Xlint",
   "-Xverify",
   "-Yclosure-elim",
-  "-Ywarn-all",
-  "-Yno-adapted-args")
+  "-Yno-adapted-args",
+  "-target:jvm-1.6"
+)
 
 licenses += ("Three-clause BSD-style", url("http://github.com/cjmx/cjmx/blob/master/LICENSE"))
 
@@ -41,10 +42,10 @@ libraryDependencies ++=
   "com.github.cjmx" % "cjmx-ext" % "1.0.0.RELEASE" ::
   "org.scalaz" %% "scalaz-core" % "7.0.6" ::
   "org.scalaz" %% "scalaz-effect" % "7.0.6" ::
-  "org.scala-sbt" % "completion" % "0.13.5-RC3" ::
+  "org.scala-sbt" % "completion" % (scalaBinaryVersion.value match { case "2.10" => "0.13.5"; case "2.11" => "0.13.6-MSERVER-2" }) ::
   "com.google.code.gson" % "gson" % "2.2.2" ::
   "org.scalatest" %% "scalatest" % "2.1.3" % "test" ::
-  "org.scalaz.stream" %% "scalaz-stream" % "0.3.1" ::
+  "org.scalaz.stream" %% "scalaz-stream" % "0.4.1" ::
   Nil
 
 unmanagedClasspath in Compile ++= toolsJar
@@ -53,14 +54,15 @@ unmanagedClasspath in Test ++= toolsJar
 
 proguardSettings
 
-minJarPath <<= target / "cjmx.jar"
-
-proguardOptions ++= Seq(keepMain("cjmx.Main"),
+ProguardKeys.options in Proguard ++= Seq(ProguardOptions.keepMain("cjmx.Main"),
   "-dontobfuscate",
   "-dontoptimize",
+  "-dontnote",
+  "-dontwarn",
+  "-ignorewarnings",
   "-keepattributes Exceptions,InnerClasses,Signature,Deprecated,SourceFile,LineNumberTable,*Annotation*,EnclosingMethod")
 
-proguardLibraryJars ++= toolsJar
+javaOptions in (Proguard, ProguardKeys.proguard) := Seq("-Xmx2048m", "-XX:MaxPermSize=512m", "-XX:ReservedCodeCacheSize=256m")
 
 publishTo <<= version { v: String =>
   val nexus = "https://oss.sonatype.org/"

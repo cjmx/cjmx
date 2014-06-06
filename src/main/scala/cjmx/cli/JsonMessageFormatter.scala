@@ -12,18 +12,64 @@ import javax.management.openmbean._
 import com.google.gson._
 
 object JsonMessageFormatter {
-  val standard = new JsonMessageFormatter {
+
+  val standard: JsonMessageFormatter = new JsonMessageFormatter {
+    private object TabularDataSupportSerializer extends JsonSerializer[TabularDataSupport] {
+      override def serialize(src: TabularDataSupport, typeOfSrc: Type, context: JsonSerializationContext) = {
+        val arr: JsonArray = new JsonArray()
+        src.asScala foreach { case (_, value) =>
+          arr.add(context.serialize(value))
+        }
+        arr
+      }
+    }
+
     val gson = gsonBuilder.
       registerTypeHierarchyAdapter(classOf[TabularDataSupport], TabularDataSupportSerializer).
       create
   }
 
-  val compact = new JsonMessageFormatter {
+  val compact: JsonMessageFormatter = new JsonMessageFormatter {
+    private object CompactTabularDataSupportSerializer extends JsonSerializer[TabularDataSupport] {
+      override def serialize(src: TabularDataSupport, typeOfSrc: Type, context: JsonSerializationContext) = {
+        val tabularType = src.getTabularType
+        val compositeType = tabularType.getRowType
+        val keys = compositeType.keySet.asScala
+
+        src.getTabularType.getIndexNames.asScala.toList match {
+          // Optimize JSON for tables with single key
+          case uniqueKey :: Nil =>
+            val obj: JsonObject = new JsonObject()
+            val entries = src.values.asScala.toList collect { case value: CompositeData =>
+              val rest = (keys - uniqueKey).toList
+              val indexKey = value.get(uniqueKey).toString
+              rest match  {
+                case singleKey :: Nil =>
+                  indexKey -> context.serialize(value.get(singleKey))
+                case _ =>
+                  indexKey -> context.serialize(value.getAll(rest.toArray))
+              }
+            }
+            entries.sortBy { _._1 }.foreach { case (key, value) =>
+              obj.add(key, value)
+            }
+            obj
+
+          case multipleKeys =>
+            val arr: JsonArray = new JsonArray()
+            src.asScala foreach { case (_, value) =>
+              arr.add(context.serialize(value))
+            }
+            arr
+        }
+      }
+    }
+
+
     val gson = gsonBuilder.
       registerTypeHierarchyAdapter(classOf[TabularDataSupport], CompactTabularDataSupportSerializer).
       create
   }
-
 }
 
 abstract class JsonMessageFormatter extends MessageFormatter {
@@ -82,51 +128,6 @@ abstract class JsonMessageFormatter extends MessageFormatter {
       val keys = src.getCompositeType.keySet.asScala.toSeq.sorted
       val keysAndValues = keys zip src.getAll(keys.toArray).toSeq
       context.serialize(toLinkedHashMap(keysAndValues))
-    }
-  }
-
-  private object TabularDataSupportSerializer extends JsonSerializer[TabularDataSupport] {
-    override def serialize(src: TabularDataSupport, typeOfSrc: Type, context: JsonSerializationContext) = {
-      val arr: JsonArray = new JsonArray()
-      src.asScala foreach { case (_, value) =>
-        arr.add(context.serialize(value))
-      }
-      arr
-    }
-  }
-
-  private object CompactTabularDataSupportSerializer extends JsonSerializer[TabularDataSupport] {
-    override def serialize(src: TabularDataSupport, typeOfSrc: Type, context: JsonSerializationContext) = {
-      val tabularType = src.getTabularType
-      val compositeType = tabularType.getRowType
-      val keys = compositeType.keySet.asScala
-
-      src.getTabularType.getIndexNames.asScala.toList match {
-        // Optimize JSON for tables with single key
-        case uniqueKey :: Nil =>
-          val obj: JsonObject = new JsonObject()
-          val entries = src.values.asScala.toList collect { case value: CompositeData =>
-            val rest = (keys - uniqueKey).toList
-            val indexKey = value.get(uniqueKey).toString
-            rest match  {
-              case singleKey :: Nil =>
-                indexKey -> context.serialize(value.get(singleKey))
-              case _ =>
-                indexKey -> context.serialize(value.getAll(rest.toArray))
-            }
-          }
-          entries.sortBy { _._1 }.foreach { case (key, value) =>
-            obj.add(key, value)
-          }
-          obj
-
-        case multipleKeys =>
-          val arr: JsonArray = new JsonArray()
-          src.asScala foreach { case (_, value) =>
-            arr.add(context.serialize(value))
-          }
-          arr
-      }
     }
   }
 

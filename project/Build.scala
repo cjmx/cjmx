@@ -1,12 +1,12 @@
 import sbt._
 import Keys._
-import ProguardPlugin._
 import sbtrelease._
 import ReleaseStateTransformations._
 import ReleasePlugin._
 import ReleaseKeys._
 import Utilities._
 import com.typesafe.sbt.SbtPgp.PgpKeys._
+import com.typesafe.sbt.SbtProguard._
 
 
 object CjmxBuild extends Build {
@@ -27,10 +27,10 @@ object CjmxBuild extends Build {
     }
   }
 
-  lazy val proguardOutputJar = TaskKey[File]("proguard-output-jar")
+  lazy val proguardOutputJar: TaskKey[File] = TaskKey[File]("proguard-output-jar")
 
   lazy val proguardPublishSettings: Seq[Project.Setting[_]] = Seq(
-    proguardOutputJar <<= (proguard, minJarPath) map { (_: Unit, jar: File) => jar }
+    proguardOutputJar <<= (ProguardKeys.proguard in Proguard, ProguardKeys.outputs in Proguard) map { (_, jars) => jars.head }
   ) ++ addArtifact(Artifact("cjmx", "app"), proguardOutputJar).settings
 
   lazy val root = Project(id = "cjmx", base = file("."), settings = Defaults.defaultSettings ++ proguardPublishSettings)
