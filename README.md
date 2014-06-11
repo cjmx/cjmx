@@ -6,18 +6,18 @@ cjmx is a command line JMX client intended to be used when graphical tools (e.g.
 Building
 ========
 
-To build, run `./sbt publish-local`.  This will build target/cjmx.jar and install a copy to your local ivy cache.
+To build, run `./sbt publish-local`.  This will build target/scala-2.10/proguard/cjmx_2.10-2.0.0-SNAPSHOT.jar and install a copy to your local ivy cache.
 
 Usage
 =====
 
 Launching cjmx is done via:
 
-    java -cp $JAVA_HOME/lib/tools.jar:cjmx.jar cjmx.Main [PID]
+    java -cp $JAVA_HOME/lib/tools.jar:target/scala-2.10/proguard/cjmx_2.10-2.0.0-SNAPSHOT.jar cjmx.Main [PID]
 
 Or, if tools.jar is on the classpath already (e.g., Apple JVM):
 
-    java -jar cjmx.jar [PID]
+    java -jar target/scala-2.10/proguard/cjmx_2.10-2.0.0-SNAPSHOT.jar [PID]
 
 If a PID is specified on the command line, cjmx will attempt to connect to the local JVM with that PID; otherwise, cjmx starts in a disconnected state.
 
