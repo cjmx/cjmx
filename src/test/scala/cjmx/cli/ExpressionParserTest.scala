@@ -3,14 +3,13 @@ package cjmx.cli
 import scala.collection.JavaConverters._
 
 import sbt.complete.Parser
-import Parser._
-import sbt.complete.DefaultParsers._
+import sbt.complete.Parser.richParser
+import sbt.complete.Parsers.Digit
 
 import org.scalatest._
-import org.scalatest.matchers._
 
 
-class ExpressionParserTest extends FunSuite with ShouldMatchers {
+class ExpressionParserTest extends FunSuite with Matchers {
 
   val validExamples = Seq(
     "1 + 2" -> "(+ 1 2)",

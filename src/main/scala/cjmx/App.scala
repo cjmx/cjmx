@@ -15,19 +15,19 @@ object App {
   private val historyFile = (userHome / ".cjmx.history").asFile
 
   def run(args: Array[String]): Int = {
-    val consoleReader = new FullReader(Some(historyFile), _: Parser[_])
+    val consoleReader = new FullReader(Some(historyFile), _: Parser[_], true)
     val reader: Parser[_] => LineReader = if (args.isEmpty) {
       consoleReader
     } else {
       val firstArgAsConnect = args.head.parseInt.map { pid => "connect -q " + pid }
-      firstArgAsConnect match {
-        case Success(cmd) if args.tail.isEmpty =>
-          prefixedReader(cmd +: args.tail, consoleReader)
-        case Success(cmd) =>
-          constReader(cmd +: args.tail :+ "exit").liftReader[Parser[_]]
-        case _ =>
-          constReader(args :+ "exit").liftReader[Parser[_]]
-      }
+      firstArgAsConnect fold (
+        _ => constReader(args :+ "exit").liftReader[Parser[_]],
+        cmd =>
+          if (args.tail.isEmpty)
+            prefixedReader(cmd +: args.tail, consoleReader)
+          else
+            constReader(cmd +: args.tail :+ "exit").liftReader[Parser[_]]
+      )
     }
 
     REPL.run(reader, Console.out)
@@ -41,11 +41,11 @@ object App {
     }
   }
 
-  private def prefixedReader(first: Array[String], then: Parser[_] => LineReader): Parser[_] => LineReader = {
+  private def prefixedReader(first: Array[String], next: Parser[_] => LineReader): Parser[_] => LineReader = {
     val firstReader = constReader(first)
     p => new LineReader {
       override def readLine(prompt: String, mask: Option[Char]) =
-        firstReader.readLine(prompt, mask) orElse (then(p).readLine(prompt, mask))
+        firstReader.readLine(prompt, mask) orElse (next(p).readLine(prompt, mask))
     }
   }
 

@@ -6,12 +6,11 @@ import javax.management.{MalformedObjectNameException, ObjectName}
 import sbt.complete.Parser
 
 import org.scalatest._
-import org.scalatest.matchers._
 
 import JMXParsers._
 
 
-class ObjectNameParserTest extends FunSuite with ShouldMatchers {
+class ObjectNameParserTest extends FunSuite with Matchers {
 
   val validExamples = Seq(
     // Basic examples
@@ -63,7 +62,7 @@ class ObjectNameParserTest extends FunSuite with ShouldMatchers {
   invalidExamples foreach { ex =>
     test("invalid - " + ex) {
       // sanity check example is invalid
-      evaluating { new ObjectName(ex) } should produce[MalformedObjectNameException]
+      a[MalformedObjectNameException] should be thrownBy { new ObjectName(ex) }
       parse(ex) should be ('left)
     }
   }
@@ -76,7 +75,6 @@ class ObjectNameParserTest extends FunSuite with ShouldMatchers {
     ("java.lang:type=", Set("*", "<value>", "ClassLoading", "Compilation", "GarbageCollector", "Memory", "MemoryManager", "MemoryPool", "OperatingSystem", "Runtime", "Threading")),
     ("java.lang:type=M", Set("Memory", "MemoryManager", "MemoryPool")),
     ("java.lang:type=MemoryPool,", Set("*", "<key>=", "name=")),
-    ("java.lang:type=MemoryPool,name=", Set("*", "<value>", "Code Cache", "CMS Old Gen", "CMS Perm Gen", "Par Eden Space", "Par Survivor Space")),
     ("java.lang:type=MemoryPool,name=Code Cache,", Set("*", "<key>="))
   )
 

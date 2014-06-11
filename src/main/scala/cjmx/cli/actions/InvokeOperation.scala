@@ -5,15 +5,15 @@ import scala.collection.JavaConverters._
 import scalaz._
 import Scalaz._
 
-import javax.management._
-import javax.management.remote.JMXConnector
+import javax.management.{ JMX => _, _ }
 
 import cjmx.util.jmx._
+import JMX._
 
 
 case class InvokeOperation(query: MBeanQuery, operationName: String, params: Seq[AnyRef]) extends ConnectedAction {
-  def applyConnected(context: ActionContext, connection: JMXConnector) = {
-    val svr = connection.getMBeanServerConnection
+  def applyConnected(context: ActionContext, connection: JMXConnection) = {
+    val svr = connection.mbeanServer
     val names = svr.toScala.queryNames(query).toSeq.sorted
     val results = names map { name =>
       val info = svr.getMBeanInfo(name)
@@ -46,7 +46,7 @@ case class InvokeOperation(query: MBeanQuery, operationName: String, params: Seq
   private def matchesSignature(op: MBeanOperationInfo): Boolean =  {
     val sig = op.getSignature
     sig.size == params.size &&
-      signatureTypes(op).fold(ts => (ts zip params).foldLeft(true) {
+      signatureTypes(op).cata(ts => (ts zip params).foldLeft(true) {
         case (acc, (s, p)) => acc && s.isAssignableFrom(p.getClass)
       }, false)
   }

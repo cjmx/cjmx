@@ -2,39 +2,26 @@ package cjmx
 
 import scalaz._
 import scalaz.syntax.id._
-import scalaz.effect.IO
-import scalaz.iteratee._
+import scalaz.Free.Trampoline
+import scalaz.concurrent.Task
+import scalaz.stream.Process
 
-import javax.management.remote.JMXConnector
-
-import cjmx.util.jmx.JMX
-
-package object cli extends JMX {
-  type ActionResult = (ActionContext, EnumeratorT[String, IO])
+package object cli {
+  /** A stream of `A` values. */
+  type Source[+A] = Process[Task,A]
+  type ActionResult = (ActionContext, Source[String])
   type Action = ActionContext => ActionResult
 
-  def enumMessageList(msgs: List[String]): EnumeratorT[String, IO] = EnumeratorT.enumList[String, IO](msgs)
-  def enumMessageSeq(msgs: Seq[String]): EnumeratorT[String, IO] = enumMessageList(msgs.toList)
-  def enumMessages(msgs: String*): EnumeratorT[String, IO] = enumMessageList(msgs.toList)
+  def enumMessageList(msgs: List[String]): Source[String] =
+    Process.emitAll(msgs)
 
-  trait SimpleAction extends Action {
-    final def apply(context: ActionContext) = act(context) |> enumMessageSeq |> { msgs => (context.withStatusCode(0), msgs) }
-    def act(context: ActionContext): Seq[String]
-  }
+  def enumMessageSeq(msgs: Seq[String]): Source[String] =
+    Process.emitAll(msgs)
 
-  trait ConnectedAction extends Action {
-    final def apply(context: ActionContext) =
-      applyConnected(context, context.connectionState.asInstanceOf[Connected].connection)
-    def applyConnected(context: ActionContext, connection: JMXConnector): ActionResult
-  }
-
-  trait SimpleConnectedAction extends ConnectedAction {
-    final def applyConnected(context: ActionContext, connection: JMXConnector) =
-      act(context, connection) |> enumMessageSeq |> { msgs => (context.withStatusCode(0), msgs) }
-    def act(context: ActionContext, connection: JMXConnector): Seq[String]
-  }
+  def enumMessages(msgs: String*): Source[String] =
+    Process.emitAll(msgs)
 
   final object NoopAction extends Action {
-    def apply(context: ActionContext) = (context, EnumeratorT.empty[String, IO])
+    def apply(context: ActionContext) = (context, Process.halt)
   }
 }

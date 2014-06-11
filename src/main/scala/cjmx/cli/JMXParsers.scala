@@ -7,17 +7,20 @@ import sbt.complete.Parser
 import sbt.complete.DefaultParsers._
 
 import scalaz.{Digit => _, _}
-import Scalaz._
+import scalaz.std.option._
+import scalaz.syntax.apply._
+import scalaz.syntax.id._
+import scalaz.syntax.std.option._
 
 import com.sun.tools.attach._
 
-import javax.management._
-import javax.management.remote.JMXConnector
+import javax.management.{ JMX => _, _ }
 
 import MoreParsers._
 
+import cjmx.ext.AttributePathValueExp
 import cjmx.util.Math.liftToBigDecimal
-import cjmx.util.jmx.{JMX, MBeanQuery}
+import cjmx.util.jmx._
 import cjmx.util.jmx.JMX._
 
 
@@ -35,7 +38,7 @@ object JMXParsers {
     } yield oname
 
   def ObjectNameDomainParser(svr: MBeanServerConnection): Parser[String] =
-    (charClass(_ != ':', "object name domain")+).string.examples(svr.getDomains: _*)
+    (charClass(_ != ':', "object name domain").+).string.examples(svr.getDomains: _*)
 
   private object ObjectNameProductions {
 
@@ -60,8 +63,8 @@ object JMXParsers {
           success(key)
       }.examples {
         val keys = for {
-          nameSoFar <- soFar.addPropertyWildcardChar.oname.toOption.toSet
-          name <- svr.toScala.queryNames(Some(nameSoFar), None)
+          nameSoFar <- soFar.addPropertyWildcardChar.oname.toOption.toSet: Set[ObjectName]
+          name <- safely(Set.empty[ObjectName]) { svr.toScala.queryNames(Some(nameSoFar), None) }
           (key, value) <- name.getKeyPropertyList |> mapAsScalaMap
           if !soFar.properties.contains(key)
         } yield key
@@ -71,8 +74,8 @@ object JMXParsers {
     def PropertyValue(svr: MBeanServerConnection, soFar: ObjectNameBuilder, key: String): Parser[String] =
       PropertyPart(valuePart = true).examples {
         val values = for {
-          nameSoFar <- soFar.addProperty(key, "*").addPropertyWildcardChar.oname.toOption.toSet
-          name <- svr.toScala.queryNames(Some(nameSoFar), None)
+          nameSoFar <- soFar.addProperty(key, "*").addPropertyWildcardChar.oname.toOption.toSet: Set[ObjectName]
+          name <- safely(Set.empty[ObjectName]) { svr.toScala.queryNames(Some(nameSoFar), None) }
           value <- (name.getKeyPropertyList |> mapAsScalaMap).get(key)
         } yield value
         values.toSet + "<value>"
@@ -123,18 +126,20 @@ object JMXParsers {
       properties.map { case (k, v) => k + "=" + v } ++ (if (wildcardProperty) Seq("*") else Seq.empty)
     ).mkString(",")
 
-    def oname: Validation[MalformedObjectNameException, ObjectName] = {
-      try new ObjectName(toString).success
+    def oname: MalformedObjectNameException \/ ObjectName = {
+      try new ObjectName(toString).right
       catch {
-        case e: MalformedObjectNameException => e.fail
+        case e: MalformedObjectNameException => e.left
       }
     }
   }
 
 
   def QueryExpParser(svr: MBeanServerConnection, name: ObjectName): Parser[QueryExp] = {
-    val attributeNames = svr.toScala.queryNames(Some(name), None).flatMap { n =>
-      svr.getMBeanInfo(n).getAttributes.map { _.getName }.toSet
+    val attributeNames = safely(Set.empty[String]) {
+      svr.toScala.queryNames(Some(name), None).flatMap { n =>
+        svr.getMBeanInfo(n).getAttributes.map { _.getName }.toSet
+      }
     }
     new QueryExpProductions(attributeNames).Query
   }
@@ -240,9 +245,10 @@ object JMXParsers {
       override lazy val Value = Attribute | Literal
     }.Expr.examples(Set("<value>", "<attribute>") ++ attributeNames)
 
-    lazy val Attribute = (NonQualifiedAttribute | QualifiedAttribute).examples("<attribute>")
+    lazy val Attribute = (NonQualifiedAttribute | QualifiedAttribute | AttributePath).examples("<attribute>")
     lazy val NonQualifiedAttribute = Identifier(DQuoteChar) map Q.attr
     lazy val QualifiedAttribute = (rep1sep(JavaIdentifier, '.') <~ '#') ~ JavaIdentifier map { case clsParts ~ attr => Q.attr(clsParts.mkString("."), attr) }
+    lazy val AttributePath = rep1sep(Identifier(DQuoteChar), '.') map { parts => new AttributePathValueExp(parts.head, new java.util.ArrayList(parts.tail.asJava)) }
 
     lazy val Literal = BooleanLiteral | LongLiteral | DoubleLiteral | StringLiteral
     lazy val BooleanLiteral = BooleanValue map Q.value
@@ -254,7 +260,7 @@ object JMXParsers {
 
   def Projection(svr: MBeanServerConnection, query: Option[MBeanQuery]): Parser[Seq[Attribute] => Seq[Attribute]] = {
     val getAttributeNames = svr.getMBeanInfo(_: ObjectName).getAttributes.map { _.getName }.toSet
-    val attributeNames = query.fold(q => svr.toScala.queryNames(q).flatMap(getAttributeNames), Set.empty[String])
+    val attributeNames = query.cata(q => safely(Set.empty[String]) { svr.toScala.queryNames(q).flatMap(getAttributeNames) }, Set.empty[String])
     new ProjectionProductions(attributeNames).Projection
   }
 
@@ -267,7 +273,7 @@ object JMXParsers {
           val attrsAsMap = attrs.map { attr => attr.getName -> attr.getValue }.toMap
           attrMappings.foldLeft(Seq.empty[Attribute]) { (acc, mapping) =>
             val attr = mapping(attrsAsMap).map { case (k, v) => new Attribute(k, v) }
-            attr.fold(a => acc :+ a, acc)
+            attr.cata(a => acc :+ a, acc)
           }
         }
       })
@@ -320,7 +326,7 @@ object JMXParsers {
         for {
           (leftName, leftValue) <- lhs(attrs)
           (rightName, rightValue) <- rhs(attrs)
-          result <- (liftToBigDecimal(leftValue) |@| liftToBigDecimal(rightValue)) apply op.apply
+          result <- ^(liftToBigDecimal(leftValue), liftToBigDecimal(rightValue))(op.apply)
         } yield ("%s %s %s".format(leftName, op.name, rightName), result)
       }
     }.Expr.examples(Set("<value>", "<attribute>") ++ attributeNames)
@@ -338,12 +344,14 @@ object JMXParsers {
     OperationName(svr, query) ~ (token("(") ~> repsep(ws.* ~> InvocationParameter(svr), ws.* ~ ',') <~ token(")"))
 
   private def OperationName(svr: MBeanServerConnection, query: Option[MBeanQuery]): Parser[String] = {
-    val ops: Set[String] = for {
-      q <- query.toSet
-      n <- svr.queryNames(q)
-      i <- svr.mbeanInfo(n).toSet
-      o <- i.getOperations
-    } yield o.getName
+    val ops: Set[String] = safely(Set.empty[String]) {
+      for {
+        q <- query.toSet: Set[MBeanQuery]
+        n <- svr.queryNames(q)
+        i <- svr.mbeanInfo(n).toSet: Set[MBeanInfo]
+        o <- i.getOperations
+      } yield o.getName
+    }
     Identifier(SQuoteChar, DQuoteChar).examples(ops + "<operation name>")
   }
 
@@ -360,7 +368,7 @@ object JMXParsers {
     ArrayP(StringValue)
   }.examples("<value>")
 
-  private def ArrayP[A: ClassManifest](p: Parser[A]): Parser[Array[A]] =
+  private def ArrayP[A: Manifest](p: Parser[A]): Parser[Array[A]] =
     (token("{") ~> repsep(ws.* ~> p, ws.* ~> ',') <~ ws.* <~ token("}")) map { _.toArray }
 
   private def Identifier(quotes: Char*) = (JavaIdentifier | QuotedIdentifier(quotes: _*)).examples("identifier")
@@ -427,4 +435,7 @@ object JMXParsers {
 
     lazy val Factor: Parser[Expression] = Value | Parenthesized(Expr).examples("(<value>)")
   }
+
+  private def safely[A](onError: => A)(f: => A): A =
+    try f catch { case e: Exception => onError }
 }

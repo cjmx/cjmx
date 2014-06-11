@@ -1,14 +1,12 @@
 package cjmx.cli
 package actions
 
-import javax.management.remote.JMXConnector
-
-import cjmx.util.jmx.MBeanQuery
+import cjmx.util.jmx._
 
 
 case class DescribeMBeans(query: MBeanQuery, detailed: Boolean) extends SimpleConnectedAction {
-  def act(context: ActionContext, connection: JMXConnector) = {
-    val svr = connection.getMBeanServerConnection
+  def act(context: ActionContext, connection: JMXConnection) = {
+    val svr = connection.mbeanServer
     val names = svr.toScala.queryNames(query).toList.sorted
     val info = names map { name => name -> svr.getMBeanInfo(name) }
     context.formatter.formatInfo(info, detailed)

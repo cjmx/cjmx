@@ -6,18 +6,17 @@ import javax.management._
 import sbt.complete.Parser
 
 import org.scalatest._
-import org.scalatest.matchers._
 
 
-class InvocationParserTest extends FunSuite with ShouldMatchers {
+class InvocationParserTest extends FunSuite with Matchers {
 
-  val validExamples = Seq(
-    "gc()" -> ("gc", Seq.empty[AnyRef]),
-    "getThreadInfo(51235L)" -> ("getThreadInfo", Seq(51235L)),
-    "getThreadInfo(51235)" -> ("getThreadInfo", Seq(51235)),
-    "getThreadInfo({51235L, 11011L})" -> ("getThreadInfo", Seq(Seq(51235L, 11011L))),
-    "getLoggerLevel('cjmx')" -> ("getLoggerLevel", Seq("cjmx")),
-    "setLoggerLevel('cjmx', 'DEBUG')" -> ("setLoggerLevel", Seq("cjmx", "DEBUG"))
+  val validExamples: Seq[(String, (String, Seq[Any]))] = Seq(
+    "gc()" -> ("gc" -> Seq.empty[AnyRef]),
+    "getThreadInfo(51235L)" -> ("getThreadInfo" -> Seq(51235L)),
+    "getThreadInfo(51235)" -> ("getThreadInfo" -> Seq(51235)),
+    "getThreadInfo({51235L, 11011L})" -> ("getThreadInfo" -> Seq(Seq(51235L, 11011L))),
+    "getLoggerLevel('cjmx')" -> ("getLoggerLevel" -> Seq("cjmx")),
+    "setLoggerLevel('cjmx', 'DEBUG')" -> ("setLoggerLevel" -> Seq("cjmx", "DEBUG"))
   )
 
   validExamples foreach { case (ex, (expectedName, expectedArgs)) =>

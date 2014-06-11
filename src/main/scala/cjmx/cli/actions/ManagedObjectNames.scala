@@ -4,14 +4,12 @@ package actions
 import scalaz.syntax.validation._
 
 import javax.management.{ObjectName, QueryExp}
-import javax.management.remote.JMXConnector
 
-import cjmx.util.jmx.MBeanQuery
-
+import cjmx.util.jmx._
 
 case class ManagedObjectNames(query: MBeanQuery) extends SimpleConnectedAction {
-  def act(context: ActionContext, connection: JMXConnector) = {
-    val names = connection.getMBeanServerConnection.toScala.queryNames(query).toList.sorted
+  def act(context: ActionContext, connection: JMXConnection) = {
+    val names = connection.mbeanServer.toScala.queryNames(query).toList.sorted
     context.formatter.formatNames(names)
   }
 }

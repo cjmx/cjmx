@@ -1,14 +1,10 @@
 package cjmx.cli
 package actions
 
-import scalaz.effect.IO
-import scalaz.iteratee.EnumeratorT
-
+import scalaz.stream.Process
 
 case class SetFormat(formatter: MessageFormatter) extends Action {
 
-  override def apply(context: ActionContext) = {
-    (context.withFormatter(formatter), EnumeratorT.empty)
-  }
-
+  override def apply(context: ActionContext) =
+    (context.withFormatter(formatter), Process.halt)
 }
