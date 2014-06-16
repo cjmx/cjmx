@@ -15,7 +15,7 @@ cjmx is available on Maven Central using groupId com.gihub.cjmx and artifactId c
 Building
 ========
 
-To build, run `./sbt publish-local`.  This will build target/cjmx.jar and install a copy to your local ivy cache.
+To build, run `./sbt publish-local`.  This will build target/scala-2.10/proguard/cjmx_2.10-2.0.0-SNAPSHOT.jar and install a copy to your local ivy cache.
 
 Note: cjmx is currently cross compiled for both Scala 2.9.2 and 2.10.  The 2.10 version depends on SBT 0.13 JARs, which are not available on public Maven or Ivy repositories.
 To build the 2.10 version, you must first run `sbt publish-local` from a local checkout of SBT on branch 0.13.  To only build the 2.9.2 version, run `++ 2.9.2` from the sbt
@@ -26,11 +26,11 @@ Usage
 
 Launching cjmx is done via:
 
-    java -cp $JAVA_HOME/lib/tools.jar:cjmx.jar cjmx.Main [PID]
+    java -cp $JAVA_HOME/lib/tools.jar:target/scala-2.10/proguard/cjmx_2.10-2.0.0-SNAPSHOT.jar cjmx.Main [PID]
 
 Or, if tools.jar is on the classpath already (e.g., Apple JVM):
 
-    java -jar cjmx.jar [PID]
+    java -jar target/scala-2.10/proguard/cjmx_2.10-2.0.0-SNAPSHOT.jar [PID]
 
 If a PID is specified on the command line, cjmx will attempt to connect to the local JVM with that PID; otherwise, cjmx starts in a disconnected state.
 
