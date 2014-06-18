@@ -117,7 +117,11 @@ abstract class JsonMessageFormatter extends MessageFormatter {
     override def serialize(src: Attributes, typeOfSrc: Type, context: JsonSerializationContext) = {
       val obj = new JsonObject
       src.attrs foreach { attr =>
-        obj.add(attr.getName, context.serialize(attr.getValue))
+        attr.getValue match {
+          case vd: java.lang.Double if vd.isNaN || vd.isInfinite => obj.add(attr.getName, context.serialize(vd.toString))
+          case vf: java.lang.Float if vf.isNaN || vf.isInfinite => obj.add(attr.getName, context.serialize(vf.toString))
+          case v => obj.add(attr.getName, context.serialize(v))
+        }
       }
       obj
     }
