@@ -8,8 +8,7 @@ import sbt.complete.DefaultParsers._
 
 import scalaz.{Digit => _, _}
 import scalaz.std.option._
-import scalaz.syntax.apply._
-import scalaz.syntax.id._
+import scalaz.syntax.all._
 import scalaz.syntax.std.option._
 
 import com.sun.tools.attach._

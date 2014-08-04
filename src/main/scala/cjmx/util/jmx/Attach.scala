@@ -19,9 +19,9 @@ object Attach {
 
   def localConnect(vmid: String): String \/ JMXConnector = for {
     vmd <- localVMs.find { _.id == vmid }.toRightDisjunction("No virtual machine with VM ID %s".format(vmid))
-    vm <- \/.fromTryCatch(VirtualMachine.attach(vmd)).<-: { _.getMessage }
+    vm <- \/.fromTryCatchNonFatal(VirtualMachine.attach(vmd)).<-: { _.getMessage }
     addr <- localConnectorAddress(vm)
-    cnx <- \/.fromTryCatch(JMXConnectorFactory.connect(new JMXServiceURL(addr))).<-: { _.getMessage }
+    cnx <- \/.fromTryCatchNonFatal(JMXConnectorFactory.connect(new JMXServiceURL(addr))).<-: { _.getMessage }
   } yield cnx
 
   def localConnectorAddress(vm: VirtualMachine): String \/ String = {

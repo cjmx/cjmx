@@ -12,8 +12,8 @@ import javax.management.openmbean._
 /** Provides utilities for working with JMX. */
 object JMX {
 
-  implicit val typeShow: Show[String @@ JMXTags.Type] = Show.shows(humanizeType)
-  implicit val valueShow: Show[AnyRef @@ JMXTags.Value] = Show.shows(humanizeValue)
+  implicit val typeShow: Show[String @@ JMXTags.Type] = Show.shows { t => humanizeType(Tag.unwrap(t)) }
+  implicit val valueShow: Show[AnyRef @@ JMXTags.Value] = Show.shows { v => humanizeValue(Tag.unwrap(v)) }
   implicit val attributeShow: Show[Attribute] = Show.shows(humanizeAttribute)
 
   def humanizeType(t: String): String = {

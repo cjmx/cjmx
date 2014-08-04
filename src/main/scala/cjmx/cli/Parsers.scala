@@ -39,7 +39,7 @@ object Parsers {
     (token("list") | token("jps")) ^^^ actions.ListVMs
 
   private def VMID(vms: Seq[String @@ JMXTags.VMID]): Parser[String] =
-    token(Digit.+.string.examples(vms: _*))
+    token(Digit.+.string.examples(vms.map(Tag.unwrap): _*))
 
   private def Connect(vms: Seq[String @@ JMXTags.VMID]): Parser[actions.Connect] =
     (token("connect" ~> ' ') ~> (token(flag("-q ")) ~ VMID(vms))) map {

@@ -6,10 +6,8 @@ import scalaz._
 import scalaz.concurrent.Task
 import scalaz.Free.Trampoline
 import scalaz.std.option._
-// TODO scalaz 7.1
-//import scalaz.syntax.either._
-//import scalaz.syntax.nel._
-import scalaz.syntax.id._
+import scalaz.syntax.either._
+import scalaz.syntax.nel._
 import scalaz.syntax.std.either._
 import scalaz.syntax.std.option._
 import scalaz.stream.{Process, Sink}
@@ -42,7 +40,7 @@ object REPL {
             line <- readLine.right[NonEmptyList[String]]
             parse = (line: String) => Parser.parse(line, parser).disjunction.bimap(_.wrapNel, identity)
             action <- line.cata(parse, NoopAction.right)
-            res <- \/.fromTryCatch(action(state)).bimap(t => humanizeActionException(t).wrapNel, identity)
+            res <- \/.fromTryCatchNonFatal(action(state)).bimap(t => humanizeActionException(t).wrapNel, identity)
           } yield res
           val newState = result fold (
             errs => {
