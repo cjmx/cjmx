@@ -7,7 +7,7 @@ import scalaz._
 import Scalaz._
 import scalaz.concurrent.Task
 import scalaz.effect._
-import scalaz.stream.Process
+import scalaz.stream.{Cause, Process}
 
 object MoreEnumerators {
 
@@ -19,7 +19,7 @@ object MoreEnumerators {
   private def readLine(src: BufferedReader): Task[String] =
     Task.delay {
       val line = src.readLine
-      if (line eq null) throw Process.End // null signals EOF
+      if (line eq null) throw Cause.Terminated(Cause.End) // null signals EOF
       else line
     }
 
@@ -29,10 +29,12 @@ object MoreEnumerators {
    * side effect is run when the stream is completed.
    */
   def enumBlockingQueue[A](q: BlockingQueue[Signal[A]], termination: => Any = ()): Process[Task,A] =
-    Process.repeatEval(Task.delay(q.take())).flatMap {
-      case Done => throw Process.End // early termination
-      case Value(a) => Process.emit(a)
-    } onComplete (Process.eval_(Task.delay(termination)))
+    Process.repeatEval(Task.delay {
+      q.take match {
+        case Done => throw Cause.Terminated(Cause.End)
+        case Value(a) => a
+      }
+    }) onComplete (Process.eval_(Task.delay(termination)))
 
   /**
    * Message type for `BlockingQueue`-based stream. Enqueueing a `Done`
