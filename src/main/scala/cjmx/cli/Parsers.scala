@@ -33,7 +33,7 @@ object Parsers {
     token("status") ^^^ actions.LastStatus
 
   def Disconnected(vms: Seq[String @@ JMXTags.VMID]): Parser[Action] =
-    ListVMs | Connect(vms) | GlobalActions !!! "Invalid input"
+    ListVMs | RemoteConnect | Connect(vms) | GlobalActions !!! "Invalid input"
 
   private val ListVMs: Parser[Action] =
     (token("list") | token("jps")) ^^^ actions.ListVMs
@@ -41,11 +41,28 @@ object Parsers {
   private def VMID(vms: Seq[String @@ JMXTags.VMID]): Parser[String] =
     token(Digit.+.string.examples(vms.map(Tag.unwrap): _*))
 
+  private def JMXUsername(): Parser[String] = charClass(isScalaIDChar, "JMX username").*.string
+
+  private def HostName(): Parser[String] =
+    token(chars(('-' :: 'a'.to('z').toList ::: 0.to(9).toList).mkString("")).*.string, "hostname")
+
+  private def IpAddress(): Parser[String] =
+    token(chars(('.' :: 0.to(9).toList).mkString("")).*.string, "ip address")
+
+  private def RemoteConnectionAddress(): Parser[((String, Int), Option[String])] =
+    token(HostName | IpAddress, "hostname or address") ~ (token(":") ~> Port) ~ opt(token(token(' ') ~> JMXUsername))
+
+  private def QuietFlag: Parser[Boolean] = token(flag("-q "))
+
   private def Connect(vms: Seq[String @@ JMXTags.VMID]): Parser[actions.Connect] =
-    (token("connect" ~> ' ') ~> (token(flag("-q ")) ~ VMID(vms))) map {
+    (token("connect" ~> ' ') ~> (QuietFlag ~ VMID(vms))) map {
       case quiet ~ vmid => actions.Connect(vmid, quiet)
     }
 
+  private def RemoteConnect: Parser[actions.RemoteConnect] =
+    (token("remote-connect" ~> ' ') ~> (QuietFlag ~ RemoteConnectionAddress())) map {
+      case quiet ~ (host ~ port ~ username) => actions.RemoteConnect(host, port, username, quiet)
+    }
 
   def Connected(svr: MBeanServerConnection): Parser[Action] = {
     MBeanAction(svr) | PrefixNames(svr) | PrefixDescribe(svr) | PrefixSelect(svr) | PrefixSample(svr) | PrefixInvoke(svr) | Disconnect | GlobalActions !!! "Invalid input"

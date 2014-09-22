@@ -1,5 +1,7 @@
 package cjmx.cli
 
+import scalaz.std.option._
+
 import cjmx.util.jmx.JMXConnection
 
 sealed trait RunState
@@ -25,6 +27,8 @@ trait ActionContext {
 
   def lastStatusCode: Int
   def withStatusCode(statusCode: Int): ActionContext
+  
+  def readLine(prompt: String, mask: Option[Char]): Option[String]
 }
 
 object ActionContext {
@@ -32,7 +36,8 @@ object ActionContext {
     runState: RunState,
     connectionState: ConnectionState,
     formatter: MessageFormatter,
-    lastStatusCode: Int
+    lastStatusCode: Int,
+    lineReader: (String, Option[Char]) => Option[String]
   ) extends ActionContext {
     override def withRunState(rs: RunState) = copy(runState = rs)
     override def exit(statusCode: Int) = withRunState(Exit(statusCode))
@@ -40,9 +45,16 @@ object ActionContext {
     override def disconnected = copy(connectionState = Disconnected)
     override def withFormatter(fmt: MessageFormatter) = copy(formatter = fmt)
     override def withStatusCode(statusCode: Int) = copy(lastStatusCode = statusCode)
+    override def readLine(prompt: String, mask: Option[Char]) = lineReader(prompt, mask)
   }
+  
+  val noOpLineReader = (x: String, y: Option[Char]) => none[String]
 
-  def apply(runState: RunState = Running, connectionState: ConnectionState = Disconnected, formatter: MessageFormatter = TextMessageFormatter, statusCode: Int = 0): ActionContext =
-    DefaultActionContext(runState, connectionState, formatter, statusCode)
+  /** Provides an instance of `ActionContext` that does not require input from the console. **/
+  def embedded(runState: RunState = Running, connectionState: ConnectionState = Disconnected, formatter: MessageFormatter = TextMessageFormatter, statusCode: Int = 0): ActionContext =
+    ActionContext(runState, connectionState, formatter, statusCode, lineReader = noOpLineReader)
+
+  def apply(runState: RunState = Running, connectionState: ConnectionState = Disconnected, formatter: MessageFormatter = TextMessageFormatter, statusCode: Int = 0, lineReader: (String, Option[Char]) => Option[String]): ActionContext =
+    DefaultActionContext(runState, connectionState, formatter, statusCode, lineReader)
 }
 
