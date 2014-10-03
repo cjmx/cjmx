@@ -127,3 +127,24 @@ Alternatively, cjmx can run a series of commands and then terminate.  This is do
 
 All commands have help information available by typing "help" in the console.
 
+Remote Connections
+==================
+
+cjmx supports connecting to remote JMX agents.  A simple _*insecure*_ way of running the remote process is:
+
+    java -Dcom.sun.management.jmxremote.port=7091 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false MainClass
+
+With this process running on host 'server', you can connect via cjmx using the 'remote-connect' command:
+
+    cjmx remote-connect server:7091
+
+Once connected, cjmx supports all the same behaviors as with a local connection.
+
+For a more secure connection, it is recommended you run with SSL and/or with username authentication.  Usernames can be specified as the optional second paramter of the 'remote-connect' command:
+
+    cjmx remote-connect server:7091 admin
+
+cjmx will then prompt for the password.  To use SSL, you must run cjmx with the appropriate javax.net.ssl flags. 
+
+For more details on configuring JMX agents, see: http://docs.oracle.com/javase/6/docs/technotes/guides/management/agent.html
+

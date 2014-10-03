@@ -16,7 +16,7 @@ import java.io.PrintWriter
 import java.io.PrintStream
 import java.rmi.UnmarshalException
 
-import sbt.LineReader
+import sbt.{ LineReader, SimpleReader}
 import sbt.complete.Parser
 
 import cjmx.util.jmx.{ Attach, JMX }
@@ -60,7 +60,7 @@ object REPL {
       }
     }
 
-    runR(ActionContext())
+    runR(ActionContext(lineReader = SimpleReader.readLine(_, _)))
   }
 
   private val newline = "%n".format()

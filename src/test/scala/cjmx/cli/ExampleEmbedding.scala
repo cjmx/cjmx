@@ -19,11 +19,12 @@ class ExampleEmbedding extends FunSuite with Matchers {
     result(0) should be ("java.lang:type=Memory")
   }
 
+
   def runMBeanAction(str: String): String \/ Vector[String] = for {
     cnx <- JMXConnection.PlatformMBeanServerConnection.right
     action <- Parser.parse(str, Parsers.MBeanAction(cnx.mbeanServer)).disjunction
     msgEnum <- {
-      val initialCtx = ActionContext(connectionState = Connected(cnx))
+      val initialCtx = ActionContext.embedded(connectionState = Connected(cnx))
       val (ctx, msgs) = action(initialCtx)
       if (ctx.lastStatusCode != 0)
         ("Action failed with status code: " + ctx.lastStatusCode).left
