@@ -27,7 +27,7 @@ trait ActionContext {
 
   def lastStatusCode: Int
   def withStatusCode(statusCode: Int): ActionContext
-  
+
   def readLine(prompt: String, mask: Option[Char]): Option[String]
 }
 
@@ -47,14 +47,17 @@ object ActionContext {
     override def withStatusCode(statusCode: Int) = copy(lastStatusCode = statusCode)
     override def readLine(prompt: String, mask: Option[Char]) = lineReader(prompt, mask)
   }
-  
+
   val noOpLineReader = (x: String, y: Option[Char]) => none[String]
 
   /** Provides an instance of `ActionContext` that does not require input from the console. **/
   def embedded(runState: RunState = Running, connectionState: ConnectionState = Disconnected, formatter: MessageFormatter = TextMessageFormatter, statusCode: Int = 0): ActionContext =
-    ActionContext(runState, connectionState, formatter, statusCode, lineReader = noOpLineReader)
+    withLineReader(runState, connectionState, formatter, statusCode, lineReader = noOpLineReader)
 
-  def apply(runState: RunState = Running, connectionState: ConnectionState = Disconnected, formatter: MessageFormatter = TextMessageFormatter, statusCode: Int = 0, lineReader: (String, Option[Char]) => Option[String]): ActionContext =
+  def apply(runState: RunState = Running, connectionState: ConnectionState = Disconnected, formatter: MessageFormatter = TextMessageFormatter, statusCode: Int = 0): ActionContext =
+    embedded(runState, connectionState, formatter, statusCode)
+
+  def withLineReader(runState: RunState = Running, connectionState: ConnectionState = Disconnected, formatter: MessageFormatter = TextMessageFormatter, statusCode: Int = 0, lineReader: (String, Option[Char]) => Option[String]): ActionContext =
     DefaultActionContext(runState, connectionState, formatter, statusCode, lineReader)
 }
 

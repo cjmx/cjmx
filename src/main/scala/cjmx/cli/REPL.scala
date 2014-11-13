@@ -60,7 +60,7 @@ object REPL {
       }
     }
 
-    runR(ActionContext(lineReader = SimpleReader.readLine(_, _)))
+    runR(ActionContext.withLineReader(lineReader = SimpleReader.readLine(_, _)))
   }
 
   private val newline = "%n".format()
