@@ -9,6 +9,7 @@ import java.util.{List => JList}
 import javax.management.{ObjectName, Attribute, MBeanInfo}
 import javax.management.openmbean._
 
+import cjmx.util.jmx.JMX
 import com.google.gson._
 
 object JsonMessageFormatter {
@@ -30,23 +31,6 @@ object JsonMessageFormatter {
   }
 
   val compact: JsonMessageFormatter = new JsonMessageFormatter {
-    private def keyToString(key: AnyRef): String = key match {
-      case compositeKey: CompositeData => 
-        val keys = compositeKey.getCompositeType.keySet.asScala.toSeq.sorted
-        val keysAndValues = keys.map { k => s"$k: ${compositeKey.get(k)}" } 
-        val typeName = compositeKey.getCompositeType.getTypeName
-
-        if (typeName.endsWith("MXBean")) {
-          val shortName = typeName.split("\\.").last.replace("MXBean", "")
-          s"$shortName(${keysAndValues.mkString(", ")})"
-
-        } else {
-          s"$typeName(${keysAndValues.mkString(", ")})"
-        }
-        
-      case other => other.toString
-    }
-
     private object CompactTabularDataSupportSerializer extends JsonSerializer[TabularDataSupport] {
       override def serialize(src: TabularDataSupport, typeOfSrc: Type, context: JsonSerializationContext) = {
         val tabularType = src.getTabularType
@@ -59,7 +43,7 @@ object JsonMessageFormatter {
             val obj: JsonObject = new JsonObject()
             val entries = src.values.asScala.toList collect { case value: CompositeData =>
               val rest = (keys - uniqueKey).toList
-              val indexKey = keyToString(value.get(uniqueKey))
+              val indexKey = JMX.humanizeKey(value.get(uniqueKey))
 
               rest match  {
                 case singleKey :: Nil =>
