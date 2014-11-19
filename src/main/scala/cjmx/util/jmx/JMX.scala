@@ -23,8 +23,24 @@ object JMX {
     }
   }
 
-  def humanizeValue(v: AnyRef): String = {
-    v match {
+  def humanizeKey(key: AnyRef): String = key match {
+    case compositeKey: CompositeData => 
+      val keys = compositeKey.getCompositeType.keySet.asScala.toSeq.sorted
+      val keysAndValues = keys.map { k => s"$k: ${compositeKey.get(k)}" } 
+      val typeName = compositeKey.getCompositeType.getTypeName
+
+      if (typeName.endsWith("MXBean")) {
+        val shortName = typeName.split("\\.").last.replace("MXBean", "")
+        s"$shortName(${keysAndValues.mkString(", ")})"
+
+      } else {
+        s"$typeName(${keysAndValues.mkString(", ")})"
+      }
+      
+    case other => other.toString
+  }
+
+  def humanizeValue(v: AnyRef): String = v match {
       case composite: CompositeData =>
         val keys = composite.getCompositeType.keySet.asScala.toSeq.sorted
         val keysAndValues = keys zip composite.getAll(keys.toArray).toSeq
@@ -43,7 +59,7 @@ object JMX {
           // Optimize tables with single key
           case uniqueKey :: Nil =>
             val humanizedMap = tds.values.asScala.toList collect { case value: CompositeData =>
-              val strKey = value.get(uniqueKey).toString
+              val strKey = humanizeKey(value.get(uniqueKey))
               val rest = (keys - uniqueKey).toList
               rest match  {
                 case singleKey :: Nil => strKey -> value.get(singleKey)
@@ -63,7 +79,6 @@ object JMX {
 
       case other => other.toString
     }
-  }
 
   def humanizeAttribute(a: Attribute): String = {
     "%s: %s".format(a.getName, JMXTags.Value(a.getValue).shows)
