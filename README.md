@@ -9,20 +9,20 @@ Getting cjmx
 cjmx is available on Maven Central using groupId com.gihub.cjmx and artifactId cjmx_2.10 or cjmx_2.11.  An executable JAR is published using the `app` classifier.
 
  - cjmx artifacts on Maven Central: http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.github.cjmx%22
- - Executable JAR using Scala 2.10: http://search.maven.org/remotecontent?filepath=com/github/cjmx/cjmx_2.10/2.1.0/cjmx_2.10-2.1.0-app.jar
+ - Executable JAR using Scala 2.10: http://search.maven.org/remotecontent?filepath=com/github/cjmx/cjmx_2.10/2.3.0/cjmx_2.10-2.3.0-app.jar
 
 Note: Both a regular and an application JAR (with embedded dependencies and minimized) are published on Maven Central.
 
 Building
 ========
-To build, run `./sbt publish-local`.  This will build target/scala-2.10/proguard/cjmx_2.10-2.2.0-SNAPSHOT.jar and install a copy to your local ivy cache.
+To build, run `./sbt publish-local`.  This will build target/scala-2.10/proguard/cjmx_2.10-2.4.0-SNAPSHOT.jar and install a copy to your local ivy cache.
 
 Usage
 =====
 
 Launching cjmx is done via:
 
-    java -cp $JAVA_HOME/lib/tools.jar:target/scala-2.10/proguard/cjmx_2.10-2.2.0-SNAPSHOT.jar cjmx.Main [PID]
+    java -cp $JAVA_HOME/lib/tools.jar:target/scala-2.10/proguard/cjmx_2.10-2.4.0-SNAPSHOT.jar cjmx.Main [PID]
 
 Or, if tools.jar is on the classpath already (e.g., Apple JVM):
 
@@ -144,7 +144,7 @@ For a more secure connection, it is recommended you run with SSL and/or with use
 
     cjmx remote-connect server:7091 admin
 
-cjmx will then prompt for the password.  To use SSL, you must run cjmx with the appropriate javax.net.ssl flags. 
+cjmx will then prompt for the password.  To use SSL, you must run cjmx with the appropriate javax.net.ssl flags.
 
 For more details on configuring JMX agents, see: http://docs.oracle.com/javase/6/docs/technotes/guides/management/agent.html
 
