@@ -26,7 +26,7 @@ object REPL {
   def run(reader: Parser[_] => LineReader, out: PrintStream): Int = {
     // A `Sink` that writes to `out`
     val printer: Sink[Task,String] =
-      scalaz.stream.io.channel((m: String) => Task.delay(out.write(m.getBytes)))
+      Process.constant((m: String) => Task.delay(out.write(m.getBytes)))
 
     @tailrec def runR(state: ActionContext): Int = {
       state.runState match {
