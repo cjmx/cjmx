@@ -14,7 +14,7 @@ object MoreEnumerators {
   /** Return the stream of lines from the given `BufferedReader`. */
   def linesR(src: BufferedReader): Process[Task,String] =
     Process.repeatEval { readLine(src) }
-           .onComplete { Process.eval_(Task.delay(src.close)) }
+           .onComplete { Process.eval_(Task.delay(src.close)) }.onHalt { _.asHalt }
 
   private def readLine(src: BufferedReader): Task[String] =
     Task.delay {
@@ -34,7 +34,7 @@ object MoreEnumerators {
         case Done => throw Cause.Terminated(Cause.End)
         case Value(a) => a
       }
-    }) onComplete (Process.eval_(Task.delay(termination)))
+    }) onComplete (Process.eval_(Task.delay(termination))) onHalt ( _.asHalt )
 
   /**
    * Message type for `BlockingQueue`-based stream. Enqueueing a `Done`
