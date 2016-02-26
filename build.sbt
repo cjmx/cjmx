@@ -15,13 +15,12 @@ scalacOptions ++= Seq(
   "-feature",
   "-deprecation",
   "-unchecked",
-//  "-optimise", // this seems to be triggering this bug - https://issues.scala-lang.org/browse/SI-3882
   "-Xcheckinit",
   "-Xlint",
   "-Xverify",
   "-Yclosure-elim",
   "-Yno-adapted-args",
-  "-target:jvm-1.6"
+  "-target:jvm-1.8"
 )
 
 licenses += ("Three-clause BSD-style", url("http://github.com/cjmx/cjmx/blob/master/LICENSE"))
@@ -48,7 +47,7 @@ unmanagedClasspath in Compile ++= toolsJar
 unmanagedClasspath in Test ++= toolsJar
 
 proguardSettings
-
+ProguardKeys.proguardVersion in Proguard := "5.0"
 ProguardKeys.options in Proguard ++= Seq(ProguardOptions.keepMain("cjmx.Main"),
   "-dontobfuscate",
   "-dontoptimize",
