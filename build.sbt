@@ -37,7 +37,7 @@ libraryDependencies ++=
   "com.github.cjmx" % "cjmx-ext" % "1.0.0.RELEASE" ::
   "org.scalaz" %% "scalaz-core" % "7.1.7" ::
   "org.scalaz" %% "scalaz-effect" % "7.1.7" ::
-  "org.scala-sbt" % "completion" % (scalaBinaryVersion.value match { case "2.10" => "0.13.5"; case "2.11" => "0.13.7" }) ::
+  "org.scala-sbt" % "completion" % (scalaBinaryVersion.value match { case "2.10" => "0.13.5"; case "2.11" => "0.13.9" }) ::
   "com.google.code.gson" % "gson" % "2.2.2" ::
   "org.scalatest" %% "scalatest" % "2.2.1" % "test" ::
   "org.scalaz.stream" %% "scalaz-stream" % "0.8" ::
