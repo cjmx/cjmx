@@ -3,15 +3,13 @@ import ReleaseStateTransformations._
 import ReleasePlugin._
 import ReleaseKeys._
 
-seq(conscriptSettings :_*)
-
 organization := "com.github.cjmx"
 
 name := "cjmx"
 
 scalaVersion := "2.11.7"
 
-crossScalaVersions := Seq("2.10.4", "2.11.7")
+crossScalaVersions := Seq("2.10.5", "2.11.7")
 
 scalacOptions ++= Seq(
   "-feature",
@@ -34,9 +32,6 @@ triggeredMessage := (_ => Watched.clearScreen)
 
 // SBT is only available in the Ivy Releases repository
 resolvers += Resolver.url("Typesafe Ivy Releases", url("http://repo.typesafe.com/typesafe/repo"))(Resolver.ivyStylePatterns)
-
-// Scalaz-stream is available from this repo
-resolvers += "Scalaz Bintray Repo" at "http://dl.bintray.com/scalaz/releases"
 
 libraryDependencies ++=
   "com.github.cjmx" % "cjmx-ext" % "1.0.0.RELEASE" ::
@@ -102,21 +97,8 @@ pomPostProcess := { (node) =>
   }
   val stripSnapshots = stripIf { n => n.label == "dependency" && (n \ "version").text.endsWith("-SNAPSHOT") }
   val stripTestScope = stripIf { n => n.label == "dependency" && (n \ "scope").text == "test" }
-  val stripConscriptDependencies = stripIf { n => n.label == "dependency" && Set("xsbt", "launcher-interface").contains((n \ "artifactId").text) }
-  new RuleTransformer(stripSnapshots, stripTestScope, stripConscriptDependencies).transform(node)(0)
+  new RuleTransformer(stripSnapshots, stripTestScope).transform(node)(0)
 }
 
-releaseSettings
+releasePublishArtifactsAction := PgpKeys.publishSigned.value
 
-releaseProcess := Seq[ReleaseStep](
-  checkSnapshotDependencies,
-  inquireVersions,
-  runTest,
-  setReleaseVersion,
-  commitReleaseVersion,
-  tagRelease,
-  publishArtifacts.copy(action = publishSignedAction),
-  setNextVersion,
-  commitNextVersion,
-  pushChanges
-)
