@@ -2,8 +2,6 @@ package cjmx.cli
 
 import scala.collection.JavaConverters._
 
-import scalaz.syntax.show._
-
 import java.lang.management.ManagementFactory
 import javax.management._
 import javax.management.openmbean.{CompositeData, CompositeDataSupport, CompositeType, OpenType, SimpleType}
@@ -12,9 +10,10 @@ import sbt.complete.Parser
 
 import org.scalatest._
 
-import cjmx.util.jmx._
-import cjmx.util.jmx.JMX._
+import scala.collection.immutable.Seq
 
+import cjmx.util.jmx._
+import cjmx.util.jmx.JMX.JAttribute
 
 class ProjectionParserTest extends FunSuite with Matchers {
 
@@ -36,7 +35,7 @@ class ProjectionParserTest extends FunSuite with Matchers {
       val attrs = Seq(heapMemoryUsage(init = 0, committed = 1000000000, used = 500000000, max = 2000000000))
       val result = parse(ex)
       val projected = result.right.get(attrs)
-      val projectedAsStrings = projected.flatMap { _.shows.split("%n".format()).map { _.trim } }
+      val projectedAsStrings = projected.flatMap { attr => JAttribute(attr).toString.split("%n".format()).map { _.trim } }
       projectedAsStrings should be (expectedOutput)
     }
   }

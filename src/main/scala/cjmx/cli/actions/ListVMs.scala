@@ -3,7 +3,6 @@ package actions
 
 import cjmx.util.jmx.Attach
 
-
 object ListVMs extends SimpleAction {
   def act(context: ActionContext) = {
     val vms = Attach.localVMs

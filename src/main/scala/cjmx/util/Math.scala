@@ -2,7 +2,7 @@ package cjmx.util
 
 object Math {
 
-  def liftToBigDecimal = (_: AnyRef) match {
+  def liftToBigDecimal: AnyRef => Option[BigDecimal] = _ match {
     case bi: java.math.BigInteger => Some(BigDecimal(new BigInt(bi)))
     case sbi: scala.math.BigInt => Some(BigDecimal(sbi))
     case bd: java.math.BigDecimal => Some(BigDecimal(bd))

@@ -7,9 +7,9 @@ organization := "com.github.cjmx"
 
 name := "cjmx"
 
-scalaVersion := "2.11.7"
+scalaVersion := "2.11.8"
 
-crossScalaVersions := Seq("2.10.5", "2.11.7")
+crossScalaVersions := Seq("2.11.8")
 
 scalacOptions ++= Seq(
   "-feature",
@@ -18,8 +18,8 @@ scalacOptions ++= Seq(
   "-Xcheckinit",
   "-Xlint",
   "-Xverify",
-  "-Yclosure-elim",
   "-Yno-adapted-args",
+  "-Ywarn-unused-import",
   "-target:jvm-1.8"
 )
 
@@ -34,29 +34,31 @@ resolvers += Resolver.url("Typesafe Ivy Releases", url("http://repo.typesafe.com
 
 libraryDependencies ++=
   "com.github.cjmx" % "cjmx-ext" % "1.0.0.RELEASE" ::
-  "org.scalaz" %% "scalaz-core" % "7.1.7" ::
-  "org.scalaz" %% "scalaz-effect" % "7.1.7" ::
-  "org.scala-sbt" % "completion" % (scalaBinaryVersion.value match { case "2.10" => "0.13.5"; case "2.11" => "0.13.9" }) ::
+  "org.scala-sbt" % "completion" % "0.13.11" ::
   "com.google.code.gson" % "gson" % "2.2.2" ::
   "org.scalatest" %% "scalatest" % "2.2.1" % "test" ::
-  "org.scalaz.stream" %% "scalaz-stream" % "0.8" ::
   Nil
 
 unmanagedClasspath in Compile ++= toolsJar
-
+unmanagedClasspath in Runtime ++= toolsJar
 unmanagedClasspath in Test ++= toolsJar
 
 proguardSettings
-ProguardKeys.proguardVersion in Proguard := "5.0"
+ProguardKeys.proguardVersion in Proguard := "5.2.1"
 ProguardKeys.options in Proguard ++= Seq(ProguardOptions.keepMain("cjmx.Main"),
   "-dontobfuscate",
   "-dontoptimize",
-  "-dontnote",
-  "-dontwarn",
   "-ignorewarnings",
-  "-keepattributes Exceptions,InnerClasses,Signature,Deprecated,SourceFile,LineNumberTable,*Annotation*,EnclosingMethod")
+  "-keepparameternames",
+  "-keepattributes *")
+ProguardKeys.inputFilter in Proguard := { file =>
+  file.name match {
+    case f if f startsWith "jansi-" => Some("!**")
+    case _ => Some("!META-INF/MANIFEST.MF")
+  }
+}
 
-javaOptions in (Proguard, ProguardKeys.proguard) := Seq("-Xmx2048m", "-XX:MaxPermSize=512m", "-XX:ReservedCodeCacheSize=256m")
+javaOptions in (Proguard, ProguardKeys.proguard) := Seq("-Xmx2048m")
 
 publishTo <<= version { v: String =>
   val nexus = "https://oss.sonatype.org/"

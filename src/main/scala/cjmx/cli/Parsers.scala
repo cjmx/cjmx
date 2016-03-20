@@ -1,17 +1,13 @@
 package cjmx.cli
 
-import sbt._
+import scala.collection.immutable.Seq
+
 import sbt.complete.Parser
 import sbt.complete.DefaultParsers._
 
-import scalaz.{Digit => _, _}
-import Scalaz._
-
-import scala.collection.JavaConverters._
-
 import javax.management._
 
-import cjmx.util.jmx.{ MBeanQuery, JMXTags }
+import cjmx.util.jmx.{ MBeanQuery, JMX }
 import JMXParsers._
 
 
@@ -32,14 +28,14 @@ object Parsers {
   private lazy val Status: Parser[Action] =
     token("status") ^^^ actions.LastStatus
 
-  def Disconnected(vms: Seq[String @@ JMXTags.VMID]): Parser[Action] =
+  def Disconnected(vms: Seq[JMX.VMID]): Parser[Action] =
     ListVMs | RemoteConnect | Connect(vms) | GlobalActions !!! "Invalid input"
 
   private val ListVMs: Parser[Action] =
     (token("list") | token("jps")) ^^^ actions.ListVMs
 
-  private def VMID(vms: Seq[String @@ JMXTags.VMID]): Parser[String] =
-    token(Digit.+.string.examples(vms.map(Tag.unwrap): _*))
+  private def VMID(vms: Seq[JMX.VMID]): Parser[String] =
+    token(Digit.+.string.examples(vms.map { _.value }: _*))
 
   private def JMXUsername(): Parser[String] = charClass(isScalaIDChar, "JMX username").*.string
 
@@ -54,7 +50,7 @@ object Parsers {
 
   private def QuietFlag: Parser[Boolean] = token(flag("-q "))
 
-  private def Connect(vms: Seq[String @@ JMXTags.VMID]): Parser[actions.Connect] =
+  private def Connect(vms: Seq[JMX.VMID]): Parser[actions.Connect] =
     (token("connect" ~> ' ') ~> (QuietFlag ~ VMID(vms))) map {
       case quiet ~ vmid => actions.Connect(vmid, quiet)
     }

@@ -1,7 +1,5 @@
 package cjmx.cli
 
-import scala.collection.JavaConverters._
-
 import sbt.complete.Parser
 import sbt.complete.Parser.richParser
 import sbt.complete.Parsers.Digit

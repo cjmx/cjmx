@@ -1,50 +1,40 @@
-package cjmx.cli
+package cjmx
+package cli
 package actions
 
-import com.sun.tools.attach._
-import javax.management.remote._
-
-import scalaz.{ @@, \/, State, Reader }
-import scalaz.std.option._
-import scalaz.stream.Process
-import scalaz.syntax.either._
-
-import cjmx.util.jmx.{Attach, JMXCredentials}
-import cjmx.util.jmx.JMX._
-
+import cjmx.util.jmx.{ Attach, JMXCredentials }
 
 case class RemoteConnect(host: String, port: Int, username: Option[String], quiet: Boolean) extends Action {
   private val uri = s"service:jmx:rmi:///jndi/rmi://$host:$port/jmxrmi"
-  
+
   def apply(context: ActionContext) = {
-    def buildCredentials(username: Option[String]): String \/ Option[JMXCredentials] = 
+    def buildCredentials(username: Option[String]): Either[String, Option[JMXCredentials]] =
       username match {
-        case Some(user) => 
+        case Some(user) =>
           val password: Option[String] = context.readLine("Password: ", Some('*')).filter { _.nonEmpty }
           password match {
-            case Some(p) => some(JMXCredentials(user, p)).right
-            case None => "No password specified.".left
+            case Some(p) => Right(Some(JMXCredentials(user, p)))
+            case None => Left("No password specified.")
           }
-        case None => none.right
+        case None => Right(None)
       }
 
     val result = for {
       credentials <- buildCredentials(username)
-      connection <- Attach.remoteConnect(uri, credentials) 
-    } yield connection 
+      connection <- Attach.remoteConnect(uri, credentials)
+    } yield connection
 
-    result fold(
-      err => (context.withStatusCode(1), Process.emit(err)),
-      cnx => {
+    result match {
+      case Left(err) => ActionResult(context.withStatusCode(1), List(err))
+      case Right(cnx) =>
         val server = cnx.getMBeanServerConnection
-        (context.connected(cnx), enumMessageList(if (quiet) List.empty else List(
-          "Connected to remote virtual machine %s".format(uri),
-          "Connection id: %s".format(cnx.getConnectionId),
-          "Default domain: %s".format(server.getDefaultDomain),
-          "%d domains registered consisting of %d total MBeans".format(server.getDomains.length, server.getMBeanCount)
-        )))
-      }
-    )
+        ActionResult(context.connected(cnx), if (quiet) List.empty else List(
+          s"Connected to remote virtual machine $uri",
+          s"Connection id: ${cnx.getConnectionId}",
+          s"Default domain: ${server.getDefaultDomain}",
+          s"${server.getDomains.length} domains registered consisting of ${server.getMBeanCount} total MBeans")
+        )
+    }
   }
 
 }

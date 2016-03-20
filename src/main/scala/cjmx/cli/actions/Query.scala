@@ -1,13 +1,11 @@
 package cjmx.cli
 package actions
 
-import scala.collection.JavaConverters._
-import scalaz.syntax.show._
+import scala.collection.immutable.Seq
 
-import javax.management.{Attribute, ObjectName, QueryExp}
+import javax.management.Attribute
 
 import cjmx.util.jmx._
-
 
 case class Query(query: MBeanQuery, projection: Seq[Attribute] => Seq[Attribute] = identity) extends SimpleConnectedAction {
   def act(context: ActionContext, connection: JMXConnection) = {
@@ -16,7 +14,7 @@ case class Query(query: MBeanQuery, projection: Seq[Attribute] => Seq[Attribute]
     val namesAndAttrs = names map { name =>
       val info = svr.getMBeanInfo(name)
       val attrNames = info.getAttributes map { _.getName }
-      name -> projection(svr.attributes(name, attrNames))
+      name -> projection(svr.attributes(name, attrNames).toList)
     }
     context.formatter.formatAttributes(namesAndAttrs)
   }

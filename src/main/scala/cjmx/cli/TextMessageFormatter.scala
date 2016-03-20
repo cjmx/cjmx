@@ -1,13 +1,10 @@
 package cjmx.cli
 
-import scalaz.syntax.show._
-import scalaz.syntax.validation._
+import scala.collection.immutable.Seq
 
-import javax.management.{ObjectName, Attribute, MBeanInfo}
+import javax.management.{ ObjectName, Attribute, MBeanInfo }
 
-import cjmx.util.jmx.{JMX, JMXTags}
-import JMX._
-
+import cjmx.util.jmx.JMX._
 
 object TextMessageFormatter extends MessageFormatter {
 
@@ -21,7 +18,7 @@ object TextMessageFormatter extends MessageFormatter {
       out <+ name.toString
       out <+ ("-" * name.toString.size)
       out indented {
-        attrs foreach { attr => out <+ attr.shows }
+        attrs foreach { attr => out <+ attr.toString }
       }
       out <+ ""
     }
@@ -42,7 +39,7 @@ object TextMessageFormatter extends MessageFormatter {
         out <+ "Attributes:"
         out indented {
           attributes.foreach { attr =>
-            out <+ "%s: %s".format(attr.getName, JMX.humanizeType(attr.getType))
+            out <+ "%s: %s".format(attr.getName, JType(attr.getType).toString)
             if (detailed) out.indented {
               out <+ "Description: %s".format(attr.getDescription)
             }
@@ -58,8 +55,8 @@ object TextMessageFormatter extends MessageFormatter {
           operations foreach { op =>
             out <+ "%s(%s): %s".format(
               op.getName,
-              op.getSignature.map { pi => "%s: %s".format(pi.getName, JMX.humanizeType(pi.getType)) }.mkString(", "),
-              JMX.humanizeType(op.getReturnType))
+              op.getSignature.map { pi => "%s: %s".format(pi.getName, JType(pi.getType).toString) }.mkString(", "),
+              JType(op.getReturnType).toString)
             if (detailed) out.indented {
               out <+ "Description: %s".format(op.getDescription)
             }

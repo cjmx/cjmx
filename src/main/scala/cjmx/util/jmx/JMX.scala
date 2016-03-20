@@ -3,51 +3,36 @@ package cjmx.util.jmx
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 
-import scalaz._
-import Scalaz._
-
 import javax.management._
 import javax.management.openmbean._
 
 /** Provides utilities for working with JMX. */
 object JMX {
 
-  implicit val typeShow: Show[String @@ JMXTags.Type] = Show.shows { t => humanizeType(Tag.unwrap(t)) }
-  implicit val valueShow: Show[AnyRef @@ JMXTags.Value] = Show.shows { v => humanizeValue(Tag.unwrap(v)) }
-  implicit val attributeShow: Show[Attribute] = Show.shows(humanizeAttribute)
+  case class VMID(value: String) {
+    override def toString = value
+  }
 
-  def humanizeType(t: String): String = {
-    try Class.forName(t).getSimpleName
-    catch {
-      case cnfe: ClassNotFoundException => t
+  case class JType(value: String) {
+    override def toString = {
+      try Class.forName(value).getSimpleName
+      catch {
+        case cnfe: ClassNotFoundException => value
+      }
     }
   }
 
-  def humanizeKey(key: AnyRef): String = key match {
-    case compositeKey: CompositeData => 
-      val keys = compositeKey.getCompositeType.keySet.asScala.toSeq.sorted
-      val keysAndValues = keys.map { k => s"$k: ${compositeKey.get(k)}" } 
-      val typeName = compositeKey.getCompositeType.getTypeName
-
-      if (typeName.endsWith("MXBean")) {
-        val shortName = typeName.split("\\.").last.replace("MXBean", "")
-        s"$shortName(${keysAndValues.mkString(", ")})"
-
-      } else {
-        s"$typeName(${keysAndValues.mkString(", ")})"
-      }
-      
-    case other => other.toString
-  }
-
-  def humanizeValue(v: AnyRef): String = v match {
+  case class JValue(value: AnyRef) {
+    override def toString = value match {
       case composite: CompositeData =>
         val keys = composite.getCompositeType.keySet.asScala.toSeq.sorted
         val keysAndValues = keys zip composite.getAll(keys.toArray).toSeq
-        keysAndValues.
-          map { case (k, v) => "%s: %s".format(k, JMXTags.Value(v).shows) }.
-          mkString(newline, newline, "") |> indentLines(2)
-      case arr: Array[_] => arr.map { case v: AnyRef => JMXTags.Value(v).shows }.mkString("[", ", ", "]")
+        indentLines(2) {
+          keysAndValues.
+            map { case (k, v) => "%s: %s".format(k, JValue(v)) }.
+            mkString(newline, newline, "")
+        }
+      case arr: Array[_] => arr.map { case v: AnyRef => JValue(v) }.mkString("[", ", ", "]")
       case n if n eq null => "null"
       case tds: TabularDataSupport =>
 
@@ -59,29 +44,51 @@ object JMX {
           // Optimize tables with single key
           case uniqueKey :: Nil =>
             val humanizedMap = tds.values.asScala.toList collect { case value: CompositeData =>
-              val strKey = humanizeKey(value.get(uniqueKey))
+              val strKey = JKey(value.get(uniqueKey)).toString
               val rest = (keys - uniqueKey).toList
               rest match  {
                 case singleKey :: Nil => strKey -> value.get(singleKey)
                 case _                => strKey -> value.getAll(rest.toArray)
               }
             }
-            humanizedMap.sortBy { _._1 }.map { case (key, value) =>
-              s"${key}: ${humanizeValue(value)}"
+            humanizedMap.sortBy { _._1 }.map { case (key, value: AnyRef) =>
+              s"${key}: ${JValue(value)}"
             }
 
           case multipleKeys =>
             tds.asScala.toList.map { case (_, value) =>
-              humanizeValue(value)
+              JValue(value).toString
             }
         }
-        newline + lines.mkString(newline) |> indentLines(2)
+        indentLines(2) { newline + lines.mkString(newline) }
+
+      case other => other.toString
+
+    }
+  }
+
+  case class JKey(value: AnyRef) {
+    override def toString = value match {
+      case compositeKey: CompositeData =>
+        val keys = compositeKey.getCompositeType.keySet.asScala.toSeq.sorted
+        val keysAndValues = keys.map { k => s"$k: ${compositeKey.get(k)}" }
+        val typeName = compositeKey.getCompositeType.getTypeName
+
+        if (typeName.endsWith("MXBean")) {
+          val shortName = typeName.split("\\.").last.replace("MXBean", "")
+          s"$shortName(${keysAndValues.mkString(", ")})"
+
+        } else {
+          s"$typeName(${keysAndValues.mkString(", ")})"
+        }
 
       case other => other.toString
     }
+  }
 
-  def humanizeAttribute(a: Attribute): String = {
-    "%s: %s".format(a.getName, JMXTags.Value(a.getValue).shows)
+  case class JAttribute(a: Attribute) {
+    override def toString =
+      "%s: %s".format(a.getName, JValue(a.getValue))
   }
 
   def typeToClass(cl: ClassLoader)(t: String): Option[Class[_]] = {

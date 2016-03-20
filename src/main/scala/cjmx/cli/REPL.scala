@@ -1,61 +1,53 @@
-package cjmx.cli
+package cjmx
+package cli
 
 import scala.annotation.tailrec
+import scala.util.control.NonFatal
 
-import scalaz._
-import scalaz.concurrent.Task
-import scalaz.Free.Trampoline
-import scalaz.std.option._
-import scalaz.syntax.either._
-import scalaz.syntax.nel._
-import scalaz.syntax.std.either._
-import scalaz.syntax.std.option._
-import scalaz.stream.{Process, Sink}
-
-import java.io.PrintWriter
 import java.io.PrintStream
 import java.rmi.UnmarshalException
 
-import sbt.{ LineReader, SimpleReader}
+import sbt.{ LineReader, SimpleReader }
 import sbt.complete.Parser
 
-import cjmx.util.jmx.{ Attach, JMX }
+import cjmx.util.jmx.Attach
 
 
 object REPL {
   def run(reader: Parser[_] => LineReader, out: PrintStream): Int = {
-    // A `Sink` that writes to `out`
-    val printer: Sink[Task,String] =
-      Process.constant((m: String) => Task.delay(out.write(m.getBytes)))
-
     @tailrec def runR(state: ActionContext): Int = {
       state.runState match {
-        case Running =>
+        case RunState.Running =>
           val parser = state.connectionState match {
-            case Disconnected => Parsers.Disconnected(Attach.localVMIDs)
-            case Connected(cnx) => Parsers.Connected(cnx.mbeanServer)
+            case ConnectionState.Disconnected => Parsers.Disconnected(Attach.localVMIDs)
+            case ConnectionState.Connected(cnx) => Parsers.Connected(cnx.mbeanServer)
           }
-          def readLine = reader(parser).readLine("> ").cata(some, some("exit")).filter { _.nonEmpty }
-          val result = for {
-            line <- readLine.right[NonEmptyList[String]]
-            parse = (line: String) => Parser.parse(line, parser).disjunction.bimap(_.wrapNel, identity)
-            action <- line.cata(parse, NoopAction.right)
-            res <- \/.fromTryCatchNonFatal(action(state)).bimap(t => humanizeActionException(t).wrapNel, identity)
+          def readLine: Option[String] =
+            reader(parser).readLine("> ").fold(Some("exit"): Option[String])(s => Some(s)).filter { _.nonEmpty }
+          val result: Either[String, ActionResult] = for {
+            line <- Right(readLine)
+            parse = (line: String) => Parser.parse(line, parser)
+            action <- line.fold(Right(NoopAction: Action): Either[String, Action])(parse)
+            res <- {
+              try Right(action(state))
+              catch {
+                case NonFatal(t) => Left(humanizeActionException(t))
+              }
+            }
           } yield res
-          val newState = result fold (
-            errs => {
-              val lines = errs.list flatMap { _.split('\n') }
+          val newState: ActionContext = result match {
+            case Left(err) =>
+              val lines = err.split('\n')
               val formatted = lines map { e => "[%serror%s] %s".format(Console.RED, Console.RESET, e) }
               formatted foreach out.println
               state.withStatusCode(1)
-            },
-            { case (newState, msgs) => msgs.map { _ + newline }.to(printer).run.run
+            case Right(ActionResult(newState, output)) =>
+              output.map { _ + newline }.foreach { msg => out.write(msg.getBytes) }
               newState
-            }
-          )
+          }
           runR(newState)
 
-        case Exit(statusCode) =>
+        case RunState.Exit(statusCode) =>
           statusCode
       }
     }

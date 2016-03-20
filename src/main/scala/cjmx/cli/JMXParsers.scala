@@ -1,17 +1,12 @@
-package cjmx.cli
+package cjmx
+package cli
 
+import scala.collection.immutable.Seq
 import scala.collection.JavaConverters._
 import scala.collection.JavaConversions.mapAsScalaMap
 
 import sbt.complete.Parser
 import sbt.complete.DefaultParsers._
-
-import scalaz.{Digit => _, _}
-import scalaz.std.option._
-import scalaz.syntax.all._
-import scalaz.syntax.std.option._
-
-import com.sun.tools.attach._
 
 import javax.management.{ JMX => _, _ }
 
@@ -20,7 +15,6 @@ import MoreParsers._
 import cjmx.ext.AttributePathValueExp
 import cjmx.util.Math.liftToBigDecimal
 import cjmx.util.jmx._
-import cjmx.util.jmx.JMX._
 
 
 object JMXParsers {
@@ -64,7 +58,7 @@ object JMXParsers {
         val keys = for {
           nameSoFar <- soFar.addPropertyWildcardChar.oname.toOption.toSet: Set[ObjectName]
           name <- safely(Set.empty[ObjectName]) { svr.toScala.queryNames(Some(nameSoFar), None) }
-          (key, value) <- name.getKeyPropertyList |> mapAsScalaMap
+          (key, value) <- mapAsScalaMap(name.getKeyPropertyList)
           if !soFar.properties.contains(key)
         } yield key
         keys.toSet + "<key>"
@@ -75,7 +69,7 @@ object JMXParsers {
         val values = for {
           nameSoFar <- soFar.addProperty(key, "*").addPropertyWildcardChar.oname.toOption.toSet: Set[ObjectName]
           name <- safely(Set.empty[ObjectName]) { svr.toScala.queryNames(Some(nameSoFar), None) }
-          value <- (name.getKeyPropertyList |> mapAsScalaMap).get(key)
+          value <- mapAsScalaMap(name.getKeyPropertyList).get(key)
         } yield value
         values.toSet + "<value>"
       }
@@ -84,7 +78,7 @@ object JMXParsers {
       PropertyPartNonQuoted(valuePart) | PropertyPartQuoted(valuePart)
 
     def PropertyPartNonQuoted(valuePart: Boolean): Parser[String] =
-      repFlatMap(none[Char]) { lastChar =>
+      repFlatMap(None: Option[Char]) { lastChar =>
         val p = {
           if (lastChar == Some('\\'))
             WildcardChar
@@ -97,7 +91,7 @@ object JMXParsers {
       }.string
 
     def PropertyPartQuoted(valuePart: Boolean): Parser[String] =
-      (DQuoteChar ~> (repFlatMap(none[Char]) { lastChar =>
+      (DQuoteChar ~> (repFlatMap(None: Option[Char]) { lastChar =>
         val p = {
           if (lastChar == Some('\\'))
             WildcardChar | DQuoteChar
@@ -125,10 +119,10 @@ object JMXParsers {
       properties.map { case (k, v) => k + "=" + v } ++ (if (wildcardProperty) Seq("*") else Seq.empty)
     ).mkString(",")
 
-    def oname: MalformedObjectNameException \/ ObjectName = {
-      try new ObjectName(toString).right
+    def oname: Either[MalformedObjectNameException, ObjectName] = {
+      try Right(new ObjectName(toString))
       catch {
-        case e: MalformedObjectNameException => e.left
+        case e: MalformedObjectNameException => Left(e)
       }
     }
   }
@@ -259,7 +253,7 @@ object JMXParsers {
 
   def Projection(svr: MBeanServerConnection, query: Option[MBeanQuery]): Parser[Seq[Attribute] => Seq[Attribute]] = {
     val getAttributeNames = svr.getMBeanInfo(_: ObjectName).getAttributes.map { _.getName }.toSet
-    val attributeNames = query.cata(q => safely(Set.empty[String]) { svr.toScala.queryNames(q).flatMap(getAttributeNames) }, Set.empty[String])
+    val attributeNames = query.fold(Set.empty[String])(q => safely(Set.empty[String]) { svr.toScala.queryNames(q).flatMap(getAttributeNames) })
     new ProjectionProductions(attributeNames).Projection
   }
 
@@ -272,7 +266,7 @@ object JMXParsers {
           val attrsAsMap = attrs.map { attr => attr.getName -> attr.getValue }.toMap
           attrMappings.foldLeft(Seq.empty[Attribute]) { (acc, mapping) =>
             val attr = mapping(attrsAsMap).map { case (k, v) => new Attribute(k, v) }
-            attr.cata(a => acc :+ a, acc)
+            attr.fold(acc)(a => acc :+ a)
           }
         }
       })
@@ -325,7 +319,10 @@ object JMXParsers {
         for {
           (leftName, leftValue) <- lhs(attrs)
           (rightName, rightValue) <- rhs(attrs)
-          result <- ^(liftToBigDecimal(leftValue), liftToBigDecimal(rightValue))(op.apply)
+          result <- for {
+            l <- liftToBigDecimal(leftValue)
+            r <- liftToBigDecimal(rightValue)
+          } yield op(l, r)
         } yield ("%s %s %s".format(leftName, op.name, rightName), result)
       }
     }.Expr.examples(Set("<value>", "<attribute>") ++ attributeNames)
@@ -340,7 +337,7 @@ object JMXParsers {
   }
 
   def Invocation(svr: MBeanServerConnection, query: Option[MBeanQuery]): Parser[(String, Seq[AnyRef])] =
-    OperationName(svr, query) ~ (token("(") ~> repsep(ws.* ~> InvocationParameter(svr), ws.* ~ ',') <~ token(")"))
+    (OperationName(svr, query) ~ (token("(") ~> repsep(ws.* ~> InvocationParameter(svr), ws.* ~ ',') <~ token(")"))).map { case (k, v) => (k, v.toList) }
 
   private def OperationName(svr: MBeanServerConnection, query: Option[MBeanQuery]): Parser[String] = {
     val ops: Set[String] = safely(Set.empty[String]) {

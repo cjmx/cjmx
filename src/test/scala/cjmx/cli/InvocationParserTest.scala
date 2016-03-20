@@ -1,7 +1,6 @@
 package cjmx.cli
 
 import java.lang.management.ManagementFactory
-import javax.management._
 
 import sbt.complete.Parser
 

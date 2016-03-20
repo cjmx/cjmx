@@ -1,11 +1,11 @@
 package cjmx.cli
 
+import scala.collection.immutable.Seq
 import scala.collection.JavaConverters._
 import scala.collection.mutable.LinkedHashMap
 
 import java.lang.reflect.Type
 import java.text.DateFormat
-import java.util.{List => JList}
 import javax.management.{ObjectName, Attribute, MBeanInfo}
 import javax.management.openmbean._
 
@@ -43,7 +43,7 @@ object JsonMessageFormatter {
             val obj: JsonObject = new JsonObject()
             val entries = src.values.asScala.toList collect { case value: CompositeData =>
               val rest = (keys - uniqueKey).toList
-              val indexKey = JMX.humanizeKey(value.get(uniqueKey))
+              val indexKey = JMX.JKey(value.get(uniqueKey)).toString
 
               rest match  {
                 case singleKey :: Nil =>
@@ -141,7 +141,7 @@ abstract class JsonMessageFormatter extends MessageFormatter {
     override def serialize(src: InvocationResult, typeOfSrc: Type, context: JsonSerializationContext) = {
       val obj = new JsonObject
       val (successful, result) = src match {
-        case InvocationResults.Succeeded(value) => (true, value)
+        case InvocationResult.Succeeded(value) => (true, value)
         case other => (false, other.toString)
       }
       obj.addProperty("successful", successful)

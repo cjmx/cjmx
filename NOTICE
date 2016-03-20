@@ -10,11 +10,13 @@ Portions of the Simple Build Tool are distributed with the application.
 Copyright 2008, 2009, 2010 Steven Blundy, Josh Cough, Mark Harrah, Stuart Roebuck, Tony Sloane, Vesa Vilhonen, Jason Zaugg
 Licensed under BSD-style license (see licenses/LICENSE_SBT)
 
-Portions of Scalaz are distributed with the application.
-Licensed under BSD-style license (see licenses/LICENSE_Scalaz)
-
 JLine is distributed with the application.
 Licensed under BSD-style license (see licenses/LICENSE_JLine)
+
+JAnsi is distributed with the application.
+Licensed under Apache License, Version 2.0 (see licenses/LICENSE_JAnsi)
+JAnsi is not distributed with a NOTICE file so the NOTICE requirement
+of its license is satisfied.
 
 Portions of Google Gson are distributed with the application.
 Licensed under Apache License, Version 2.0 (see licenses/LICENSE_gson)

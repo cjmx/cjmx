@@ -1,16 +1,12 @@
 package cjmx.cli
 
-import scalaz.syntax.show._
-
 import cjmx.util.jmx.JMX._
-import cjmx.util.jmx.JMXTags
 
+sealed abstract class InvocationResult
 
-sealed trait InvocationResult
-
-final object InvocationResults {
-  final case class Succeeded(value: AnyRef) extends InvocationResult {
-    override def toString = JMXTags.Value(value).shows
+object InvocationResult {
+  final case class Succeeded(value: JValue) extends InvocationResult {
+    override def toString = value.toString
   }
   final case class Failed(cause: Exception) extends InvocationResult {
     override def toString = "exception: " + cause.getMessage
@@ -30,5 +26,3 @@ final object InvocationResults {
     )
   }
 }
-
-

@@ -1,5 +1,7 @@
 package cjmx.cli
 
+import scala.collection.immutable.Seq
+
 import javax.management.{ObjectName, Attribute, MBeanInfo}
 
 trait MessageFormatter {

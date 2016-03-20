@@ -1,10 +1,6 @@
 package cjmx.cli
 package actions
 
-import scalaz.syntax.validation._
-
-import javax.management.{ObjectName, QueryExp}
-
 import cjmx.util.jmx._
 
 case class ManagedObjectNames(query: MBeanQuery) extends SimpleConnectedAction {

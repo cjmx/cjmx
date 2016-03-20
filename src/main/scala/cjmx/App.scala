@@ -1,9 +1,6 @@
 package cjmx
 
-import scalaz._
-import Scalaz._
-
-import java.io.PrintWriter
+import scala.util.Try
 
 import sbt.{FullReader, LineReader, Path}
 import Path._
@@ -19,17 +16,17 @@ object App {
     val reader: Parser[_] => LineReader = if (args.isEmpty) {
       consoleReader
     } else {
-      val firstArgAsConnect = args.head.parseInt.map { pid => "connect -q " + pid }
-      firstArgAsConnect fold (
-        _ => constReader(args :+ "exit").liftReader[Parser[_]],
-        cmd =>
+      val firstArgAsConnect = Try(args.head.toInt).toOption.map { pid => "connect -q " + pid }
+      firstArgAsConnect match {
+        case None =>
+          p => constReader(args :+ "exit")
+        case Some(cmd) =>
           if (args.tail.isEmpty)
             prefixedReader(cmd +: args.tail, consoleReader)
           else
-            constReader(cmd +: args.tail :+ "exit").liftReader[Parser[_]]
-      )
+            p => constReader(cmd +: args.tail :+ "exit")
+      }
     }
-
     REPL.run(reader, Console.out)
   }
 
@@ -48,6 +45,4 @@ object App {
         firstReader.readLine(prompt, mask) orElse (next(p).readLine(prompt, mask))
     }
   }
-
 }
-

@@ -1,11 +1,5 @@
 package cjmx.cli
 
-import scalaz.\/
-import scalaz.Free.Trampoline
-import scalaz.std.vector._
-import scalaz.syntax.either._
-import scalaz.syntax.std.either._
-
 import org.scalatest._
 
 import sbt.complete.Parser
@@ -20,16 +14,18 @@ class ExampleEmbedding extends FunSuite with Matchers {
   }
 
 
-  def runMBeanAction(str: String): String \/ Vector[String] = for {
-    cnx <- JMXConnection.PlatformMBeanServerConnection.right
-    action <- Parser.parse(str, Parsers.MBeanAction(cnx.mbeanServer)).disjunction
-    msgEnum <- {
-      val initialCtx = ActionContext.embedded(connectionState = Connected(cnx))
-      val (ctx, msgs) = action(initialCtx)
-      if (ctx.lastStatusCode != 0)
-        ("Action failed with status code: " + ctx.lastStatusCode).left
-      else
-        msgs.right
-    }
-  } yield msgEnum.chunkAll.runLastOr(Vector()).run
+  def runMBeanAction(str: String): Either[String, Vector[String]] = {
+    val cnx = JMXConnection.PlatformMBeanServerConnection
+    for {
+      action <- Parser.parse(str, Parsers.MBeanAction(cnx.mbeanServer)).right
+      msgs <- {
+        val initialCtx = ActionContext.embedded(connectionState = ConnectionState.Connected(cnx))
+        val ActionResult(ctx, msgs) = action(initialCtx)
+        if (ctx.lastStatusCode != 0)
+          Left("Action failed with status code: " + ctx.lastStatusCode)
+        else
+          Right(msgs)
+      }.right
+    } yield msgs.toVector
+  }
 }
