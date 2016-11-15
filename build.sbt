@@ -127,4 +127,5 @@ pomPostProcess := { (node) =>
   new RuleTransformer(stripSnapshots, stripTestScope).transform(node)(0)
 }
 
+releaseCrossBuild := true
 releasePublishArtifactsAction := PgpKeys.publishSigned.value
