@@ -19,12 +19,15 @@ object App {
       val firstArgAsConnect = Try(args.head.toInt).toOption.map { pid => "connect -q " + pid }
       firstArgAsConnect match {
         case None =>
-          p => constReader(args :+ "exit")
+          val r = constReader(args :+ "exit")
+          p => r
         case Some(cmd) =>
-          if (args.tail.isEmpty)
+          if (args.tail.isEmpty) {
             prefixedReader(cmd +: args.tail, consoleReader)
-          else
-            p => constReader(cmd +: args.tail :+ "exit")
+          } else {
+            val r = constReader(cmd +: args.tail :+ "exit")
+            p => r
+          }
       }
     }
     REPL.run(reader, Console.out)
