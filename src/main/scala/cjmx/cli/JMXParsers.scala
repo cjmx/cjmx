@@ -3,7 +3,8 @@ package cli
 
 import scala.collection.immutable.Seq
 import scala.collection.JavaConverters._
-import scala.collection.JavaConversions.mapAsScalaMap
+
+import java.util.{ Map => JMap }
 
 import sbt.complete.Parser
 import sbt.complete.DefaultParsers._
@@ -58,7 +59,7 @@ object JMXParsers {
         val keys = for {
           nameSoFar <- soFar.addPropertyWildcardChar.oname.toOption.toSet: Set[ObjectName]
           name <- safely(Set.empty[ObjectName]) { svr.toScala.queryNames(Some(nameSoFar), None) }
-          (key, value) <- mapAsScalaMap(name.getKeyPropertyList)
+          (key, value) <- (name.getKeyPropertyList: JMap[String, String]).asScala
           if !soFar.properties.contains(key)
         } yield key
         keys.toSet + "<key>"
@@ -69,7 +70,7 @@ object JMXParsers {
         val values = for {
           nameSoFar <- soFar.addProperty(key, "*").addPropertyWildcardChar.oname.toOption.toSet: Set[ObjectName]
           name <- safely(Set.empty[ObjectName]) { svr.toScala.queryNames(Some(nameSoFar), None) }
-          value <- mapAsScalaMap(name.getKeyPropertyList).get(key)
+          value <- (name.getKeyPropertyList: JMap[String, String]).asScala.get(key)
         } yield value
         values.toSet + "<value>"
       }

@@ -7,9 +7,9 @@ organization := "com.github.cjmx"
 
 name := "cjmx"
 
-scalaVersion := "2.11.8"
+scalaVersion := crossScalaVersions.value.last
 
-crossScalaVersions := Seq("2.11.8")
+crossScalaVersions := Seq("2.11.8", "2.12.0")
 
 scalacOptions ++= Seq(
   "-feature",
@@ -25,23 +25,41 @@ scalacOptions ++= Seq(
 
 licenses += ("Three-clause BSD-style", url("http://github.com/cjmx/cjmx/blob/master/LICENSE"))
 
-unmanagedResources in Compile <++= baseDirectory map { base => (base / "NOTICE") +: (base / "LICENSE") +: ((base / "licenses") * "LICENSE_*").get }
+unmanagedResources in Compile ++= {
+  val base = baseDirectory.value
+  (base / "NOTICE") +: (base / "LICENSE") +: ((base / "licenses") * "LICENSE_*").get
+}
 
 triggeredMessage := (_ => Watched.clearScreen)
 
 // SBT is only available in the Ivy Releases repository
-resolvers += Resolver.url("Typesafe Ivy Releases", url("http://repo.typesafe.com/typesafe/repo"))(Resolver.ivyStylePatterns)
+resolvers += Resolver.url("Typesafe Ivy Releases", url("https://dl.bintray.com/typesafe/ivy-releases"))(Resolver.ivyStylePatterns)
 
 libraryDependencies ++=
   "com.github.cjmx" % "cjmx-ext" % "1.0.0.RELEASE" ::
-  "org.scala-sbt" % "completion" % "0.13.11" ::
+  "org.scala-sbt" %% "completion" % "0.13.13" ::
   "com.google.code.gson" % "gson" % "2.2.2" ::
-  "org.scalatest" %% "scalatest" % "2.2.1" % "test" ::
+  "org.scalatest" %% "scalatest" % "3.0.0" % "test" ::
   Nil
 
 unmanagedClasspath in Compile ++= toolsJar
 unmanagedClasspath in Runtime ++= toolsJar
 unmanagedClasspath in Test ++= toolsJar
+
+lazy val toolsJar = {
+  def appleJdk6OrPrior: Boolean = {
+    (sys.props("java.vendor") contains "Apple") && {
+      val JavaVersion = """^(\d+)\.(\d+)\..*$""".r
+      val JavaVersion(major, minor) = sys.props("java.version")
+      major.toInt == 1 && minor.toInt < 7
+    }
+  }
+
+  val javaHome = Path(Path.fileProperty("java.home").asFile.getParent)
+  val toolsJar = Option(javaHome / "lib" / "tools.jar").filter { _.exists }
+  if (toolsJar.isEmpty && !appleJdk6OrPrior) sys.error("tools.jar not in $JAVA_HOME/lib")
+  toolsJar.toSeq
+}
 
 proguardSettings
 ProguardKeys.proguardVersion in Proguard := "5.2.1"
@@ -60,9 +78,17 @@ ProguardKeys.inputFilter in Proguard := { file =>
 
 javaOptions in (Proguard, ProguardKeys.proguard) := Seq("-Xmx2048m")
 
-publishTo <<= version { v: String =>
+lazy val proguardOutputJar: TaskKey[File] = TaskKey[File]("proguard-output-jar")
+proguardOutputJar := {
+  val _ = (ProguardKeys.proguard in Proguard).value
+  (ProguardKeys.outputs in Proguard).value.head
+}
+
+addArtifact(Artifact("cjmx", "app"), proguardOutputJar).settings
+
+publishTo := {
   val nexus = "https://oss.sonatype.org/"
-  if (v.trim.endsWith("SNAPSHOT"))
+  if (version.value.trim.endsWith("SNAPSHOT"))
     Some("snapshots" at nexus + "content/repositories/snapshots")
   else
     Some("releases" at nexus + "service/local/staging/deploy/maven2")
@@ -102,4 +128,3 @@ pomPostProcess := { (node) =>
 }
 
 releasePublishArtifactsAction := PgpKeys.publishSigned.value
-
