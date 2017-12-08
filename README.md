@@ -9,7 +9,7 @@ Getting cjmx
 cjmx is available on Maven Central using groupId com.gihub.cjmx and artifactId cjmx_2.12.  An executable JAR is published using the `app` classifier.
 
  - cjmx artifacts on Maven Central: http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.github.cjmx%22
- - Executable JAR using Scala 2.12: http://search.maven.org/remotecontent?filepath=com/github/cjmx/cjmx_2.12/2.6.0/cjmx_2.12-2.6.0-app.jar
+ - Executable JAR using Scala 2.12: http://search.maven.org/remotecontent?filepath=com/github/cjmx/cjmx_2.12/2.7.0/cjmx_2.12-2.7.0-app.jar
 
 Note: Both a regular and an application JAR (with embedded dependencies and minimized) are published on Maven Central.
 
