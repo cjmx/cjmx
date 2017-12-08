@@ -7,8 +7,8 @@ import scala.util.control.NonFatal
 import java.io.PrintStream
 import java.rmi.UnmarshalException
 
-import sbt.{ LineReader, SimpleReader }
-import sbt.complete.Parser
+import sbt.internal.util.{ LineReader, SimpleReader }
+import sbt.internal.util.complete.Parser
 
 import cjmx.util.jmx.Attach
 
@@ -56,7 +56,6 @@ object REPL {
   }
 
   private val newline = "%n".format()
-  private val addNewline = (_: String) + newline
 
   private def humanizeActionException(t: Throwable): String = t match {
     case e: UnmarshalException

@@ -6,7 +6,7 @@ import java.lang.management.ManagementFactory
 import javax.management._
 import javax.management.openmbean.{CompositeData, CompositeDataSupport, CompositeType, OpenType, SimpleType}
 
-import sbt.complete.Parser
+import sbt.internal.util.complete.Parser
 
 import org.scalatest._
 

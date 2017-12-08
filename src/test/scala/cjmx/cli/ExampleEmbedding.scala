@@ -2,7 +2,7 @@ package cjmx.cli
 
 import org.scalatest._
 
-import sbt.complete.Parser
+import sbt.internal.util.complete.Parser
 import cjmx.util.jmx.JMXConnection
 
 

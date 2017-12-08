@@ -2,8 +2,8 @@ package cjmx.cli
 
 import scala.collection.immutable.Seq
 
-import sbt.complete.Parser
-import sbt.complete.DefaultParsers._
+import sbt.internal.util.complete.Parser
+import sbt.internal.util.complete.DefaultParsers._
 
 import javax.management._
 

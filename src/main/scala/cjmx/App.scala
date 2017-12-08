@@ -2,14 +2,15 @@ package cjmx
 
 import scala.util.Try
 
-import sbt.{FullReader, LineReader, Path}
-import Path._
-import sbt.complete.Parser
+import sbt.io.Path
+import sbt.io.syntax._
+import sbt.internal.util.{FullReader, LineReader}
+import sbt.internal.util.complete.Parser
 
 import cjmx.cli.REPL
 
 object App {
-  private val historyFile = (userHome / ".cjmx.history").asFile
+  private val historyFile = (Path.userHome / ".cjmx.history").asFile
 
   def run(args: Array[String]): Int = {
     val consoleReader = new FullReader(Some(historyFile), _: Parser[_], true)

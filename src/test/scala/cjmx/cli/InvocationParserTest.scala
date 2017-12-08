@@ -2,7 +2,7 @@ package cjmx.cli
 
 import java.lang.management.ManagementFactory
 
-import sbt.complete.Parser
+import sbt.internal.util.complete.Parser
 
 import org.scalatest._
 

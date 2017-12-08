@@ -1,8 +1,8 @@
 package cjmx.cli
 
-import sbt.complete.Parser
-import sbt.complete.Parser.richParser
-import sbt.complete.Parsers.Digit
+import sbt.internal.util.complete.Parser
+import sbt.internal.util.complete.Parser.richParser
+import sbt.internal.util.complete.Parsers.Digit
 
 import org.scalatest._
 

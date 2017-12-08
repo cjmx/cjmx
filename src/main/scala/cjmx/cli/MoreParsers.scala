@@ -1,7 +1,7 @@
 package cjmx.cli
 
-import sbt.complete.Parser
-import sbt.complete.DefaultParsers.SpaceClass
+import sbt.internal.util.complete.Parser
+import sbt.internal.util.complete.DefaultParsers.SpaceClass
 
 
 /** Provides generic parsers that add to the functionality provided by SBT complete. */

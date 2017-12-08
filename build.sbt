@@ -9,7 +9,7 @@ name := "cjmx"
 
 scalaVersion := crossScalaVersions.value.last
 
-crossScalaVersions := Seq("2.11.8", "2.12.0")
+crossScalaVersions := Seq("2.12.4")
 
 scalacOptions ++= Seq(
   "-feature",
@@ -32,12 +32,9 @@ unmanagedResources in Compile ++= {
 
 triggeredMessage := (_ => Watched.clearScreen)
 
-// SBT is only available in the Ivy Releases repository
-resolvers += Resolver.url("Typesafe Ivy Releases", url("https://dl.bintray.com/typesafe/ivy-releases"))(Resolver.ivyStylePatterns)
-
 libraryDependencies ++=
   "com.github.cjmx" % "cjmx-ext" % "1.0.0.RELEASE" ::
-  "org.scala-sbt" %% "completion" % "0.13.13" ::
+  "org.scala-sbt" %% "completion" % "1.0.4" ::
   "com.google.code.gson" % "gson" % "2.2.2" ::
   "org.scalatest" %% "scalatest" % "3.0.0" % "test" ::
   Nil

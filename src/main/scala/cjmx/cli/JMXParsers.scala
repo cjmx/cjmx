@@ -6,8 +6,8 @@ import scala.collection.JavaConverters._
 
 import java.util.{ Map => JMap }
 
-import sbt.complete.Parser
-import sbt.complete.DefaultParsers._
+import sbt.internal.util.complete.Parser
+import sbt.internal.util.complete.DefaultParsers._
 
 import javax.management.{ JMX => _, _ }
 
