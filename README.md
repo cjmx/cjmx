@@ -6,7 +6,7 @@ cjmx is a command line JMX client intended to be used when graphical tools (e.g.
 Getting cjmx
 ============
 
-cjmx is available on Maven Central using groupId com.gihub.cjmx and artifactId cjmx_2.12.  An executable JAR is published using the `app` classifier.
+cjmx is available on Maven Central using groupId `com.github.cjmx` and artifactId `cjmx_2.12`.  An executable JAR is published using the `app` classifier.
 
  - cjmx artifacts on Maven Central: http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.github.cjmx%22
  - Executable JAR using Scala 2.12: http://search.maven.org/remotecontent?filepath=com/github/cjmx/cjmx_2.12/2.7.0/cjmx_2.12-2.7.0-app.jar
@@ -15,7 +15,7 @@ Note: Both a regular and an application JAR (with embedded dependencies and mini
 
 Building
 ========
-To build, run `./sbt publish-local`.  This will build target/scala-2.10/proguard/cjmx_2.12-2.7.0-SNAPSHOT.jar and install a copy to your local ivy cache.
+To build, run `./sbt publish-local`.  This will build `target/scala-2.10/proguard/cjmx_2.12-2.7.0-SNAPSHOT.jar` and install a copy to your local ivy cache.
 
 Usage
 =====
@@ -139,7 +139,7 @@ For a more secure connection, it is recommended you run with SSL and/or with use
 
     cjmx remote-connect server:7091 admin
 
-cjmx will then prompt for the password.  To use SSL, you must run cjmx with the appropriate javax.net.ssl flags.
+cjmx will then prompt for the password.  To use SSL, you must run cjmx with the appropriate `javax.net.ssl` flags.
 
 For more details on configuring JMX agents, see: http://docs.oracle.com/javase/6/docs/technotes/guides/management/agent.html
 
