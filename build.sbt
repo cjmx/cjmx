@@ -69,6 +69,7 @@ ProguardKeys.options in Proguard ++= Seq(ProguardOptions.keepMain("cjmx.Main"),
 ProguardKeys.inputFilter in Proguard := { file =>
   file.name match {
     case f if f startsWith "jansi-" => Some("!**")
+    case "tools.jar" => Some("!META-INF/**")
     case _ => Some("!META-INF/MANIFEST.MF")
   }
 }
