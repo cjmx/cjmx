@@ -38,8 +38,7 @@ object Attach {
   def localConnectorAddress(vm: VirtualMachine): Either[String, String] = {
     def getLocalConnectorAddress = Option(vm.getAgentProperties.getProperty("com.sun.management.jmxremote.localConnectorAddress"))
     val localConnectorAddress = getLocalConnectorAddress orElse {
-      val agent = vm.getSystemProperties.getProperty("java.home") + File.separator + "lib" + File.separator + "management-agent.jar"
-      vm.loadAgent(agent)
+      vm.startLocalManagementAgent()
       getLocalConnectorAddress
     }
     localConnectorAddress.toRight("Failed to connect to VM ID %s.".format(vm.id))
