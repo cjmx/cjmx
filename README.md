@@ -141,5 +141,5 @@ For a more secure connection, it is recommended you run with SSL and/or with use
 
 cjmx will then prompt for the password.  To use SSL, you must run cjmx with the appropriate `javax.net.ssl` flags.
 
-For more details on configuring JMX agents, see: https://docs.oracle.com/javase/6/docs/technotes/guides/management/agent.html
+For more details on configuring JMX agents, see: https://docs.oracle.com/javase/8/docs/technotes/guides/management/agent.html
 
