@@ -1,5 +1,5 @@
 
-Cjmx has two main states -- connected to a JVM and disconnected.  The commands available are sensitive to the current connectivity state.
+cjmx has two main states -- connected to a JVM and disconnected.  The commands available are sensitive to the current connectivity state.
 
 ## Global Commands
 

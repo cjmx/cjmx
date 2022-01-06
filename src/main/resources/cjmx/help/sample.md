@@ -4,7 +4,7 @@ Repeatedly gets attribute values of MBeans that match the specified object name 
     sample [* | projection] from 'object-name-pattern' [where query-expression] [every m seconds] [for n seconds]
     mbeans 'object-name-pattern' [where query-expression] sample [* | projection] [every m seconds] [for n seconds]
 
- - object-name-pattern - object name pattern conformant to pattern described in http://docs.oracle.com/javase/7/docs/api/javax/management/ObjectName.html
+ - object-name-pattern - object name pattern conformant to pattern described in https://docs.oracle.com/javase/8/docs/api/javax/management/ObjectName.html
  - query-expression - expression that limits the MBeans sampled.  See "help query" for more information.
  - projection - specification of the attribute values to sample.  Projections use the same format as those used in select.  See "help select" for more information.
  - m - number of seconds between samplings (defaults to 1).

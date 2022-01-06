@@ -8,8 +8,8 @@ Getting cjmx
 
 cjmx is available on Maven Central using groupId `com.github.cjmx` and artifactId `cjmx_2.12`.  An executable JAR is published using the `app` classifier.
 
- - cjmx artifacts on Maven Central: http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.github.cjmx%22
- - Executable JAR using Scala 2.12: http://search.maven.org/remotecontent?filepath=com/github/cjmx/cjmx_2.12/2.8.0/cjmx_2.12-2.8.0-app.jar
+ - cjmx artifacts on Maven Central: https://search.maven.org/search?q=g:com.github.cjmx
+ - Executable JAR using Scala 2.12: https://search.maven.org/remotecontent?filepath=com/github/cjmx/cjmx_2.12/2.8.1/cjmx_2.12-2.8.1-app.jar
 
 Note: Both a regular and an application JAR (with embedded dependencies and minimized) are published on Maven Central.
 
@@ -22,11 +22,11 @@ Usage
 
 Launching cjmx is done via, using Java 8+:
 
-    java -cp $JAVA_HOME/lib/tools.jar:target/scala-2.12/proguard/cjmx_2.12-2.7.0-SNAPSHOT.jar cjmx.Main [PID]
+    java -cp $JAVA_HOME/lib/tools.jar:target/scala-2.12/proguard/cjmx_2.12-2.8.1-SNAPSHOT.jar cjmx.Main [PID]
 
 If a PID is specified on the command line, cjmx will attempt to connect to the local JVM with that PID; otherwise, cjmx starts in a disconnected state.
 
-Once cjmx starts, a prompt will appear.  Cjmx makes heavy use of tab completion, enabling exploration of the MBean tree.  For example:
+Once cjmx starts, a prompt will appear.  cjmx makes heavy use of tab completion, enabling exploration of the MBean tree.  For example:
 
     java -jar path/to/cjmx.jar 1234
     > <TAB>
@@ -135,11 +135,11 @@ With this process running on host 'server', you can connect via cjmx using the '
 
 Once connected, cjmx supports all the same behaviors as with a local connection.
 
-For a more secure connection, it is recommended you run with SSL and/or with username authentication.  Usernames can be specified as the optional second paramter of the 'remote-connect' command:
+For a more secure connection, it is recommended you run with SSL and/or with username authentication.  Usernames can be specified as the optional second parameter of the 'remote-connect' command:
 
     cjmx remote-connect server:7091 admin
 
 cjmx will then prompt for the password.  To use SSL, you must run cjmx with the appropriate `javax.net.ssl` flags.
 
-For more details on configuring JMX agents, see: http://docs.oracle.com/javase/6/docs/technotes/guides/management/agent.html
+For more details on configuring JMX agents, see: https://docs.oracle.com/javase/8/docs/technotes/guides/management/agent.html
 
