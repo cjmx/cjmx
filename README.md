@@ -26,7 +26,7 @@ Launching cjmx is done via, using Java 8+:
 
 If a PID is specified on the command line, cjmx will attempt to connect to the local JVM with that PID; otherwise, cjmx starts in a disconnected state.
 
-Once cjmx starts, a prompt will appear.  Cjmx makes heavy use of tab completion, enabling exploration of the MBean tree.  For example:
+Once cjmx starts, a prompt will appear.  cjmx makes heavy use of tab completion, enabling exploration of the MBean tree.  For example:
 
     java -jar path/to/cjmx.jar 1234
     > <TAB>
