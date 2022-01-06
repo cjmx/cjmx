@@ -135,7 +135,7 @@ With this process running on host 'server', you can connect via cjmx using the '
 
 Once connected, cjmx supports all the same behaviors as with a local connection.
 
-For a more secure connection, it is recommended you run with SSL and/or with username authentication.  Usernames can be specified as the optional second paramter of the 'remote-connect' command:
+For a more secure connection, it is recommended you run with SSL and/or with username authentication.  Usernames can be specified as the optional second parameter of the 'remote-connect' command:
 
     cjmx remote-connect server:7091 admin
 
