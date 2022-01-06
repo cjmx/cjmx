@@ -8,8 +8,8 @@ Getting cjmx
 
 cjmx is available on Maven Central using groupId `com.github.cjmx` and artifactId `cjmx_2.12`.  An executable JAR is published using the `app` classifier.
 
- - cjmx artifacts on Maven Central: http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.github.cjmx%22
- - Executable JAR using Scala 2.12: http://search.maven.org/remotecontent?filepath=com/github/cjmx/cjmx_2.12/2.8.0/cjmx_2.12-2.8.0-app.jar
+ - cjmx artifacts on Maven Central: https://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.github.cjmx%22
+ - Executable JAR using Scala 2.12: https://search.maven.org/remotecontent?filepath=com/github/cjmx/cjmx_2.12/2.8.0/cjmx_2.12-2.8.0-app.jar
 
 Note: Both a regular and an application JAR (with embedded dependencies and minimized) are published on Maven Central.
 
@@ -141,5 +141,5 @@ For a more secure connection, it is recommended you run with SSL and/or with use
 
 cjmx will then prompt for the password.  To use SSL, you must run cjmx with the appropriate `javax.net.ssl` flags.
 
-For more details on configuring JMX agents, see: http://docs.oracle.com/javase/6/docs/technotes/guides/management/agent.html
+For more details on configuring JMX agents, see: https://docs.oracle.com/javase/6/docs/technotes/guides/management/agent.html
 

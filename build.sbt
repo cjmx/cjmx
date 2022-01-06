@@ -23,7 +23,7 @@ scalacOptions ++= Seq(
   "-target:jvm-1.8"
 )
 
-licenses += ("Three-clause BSD-style", url("http://github.com/cjmx/cjmx/blob/master/LICENSE"))
+licenses += ("Three-clause BSD-style", url("https://github.com/cjmx/cjmx/blob/master/LICENSE"))
 
 unmanagedResources in Compile ++= {
   val base = baseDirectory.value
@@ -99,7 +99,7 @@ publishArtifact in Test := false
 pomIncludeRepository := { x => false }
 
 pomExtra := (
-  <url>http://github.com/cjmx/cjmx</url>
+  <url>https://github.com/cjmx/cjmx</url>
   <scm>
     <url>git@github.com:cjmx/cjmx.git</url>
     <connection>scm:git:git@github.com:cjmx/cjmx.git</connection>
@@ -108,7 +108,7 @@ pomExtra := (
     <developer>
       <id>mpilquist</id>
       <name>Michael Pilquist</name>
-      <url>http://github.com/mpilquist</url>
+      <url>https://github.com/mpilquist</url>
     </developer>
   </developers>
 )

@@ -4,7 +4,7 @@ Gets attribute values of MBeans that match the specified object name pattern and
     select [* | projection] from 'object-name-pattern' [where query-expression]
     mbeans 'object-name-pattern' [where query-expression] select [* | projection]
 
- - object-name-pattern - object name pattern conformant to pattern described in http://docs.oracle.com/javase/7/docs/api/javax/management/ObjectName.html
+ - object-name-pattern - object name pattern conformant to pattern described in https://docs.oracle.com/javase/7/docs/api/javax/management/ObjectName.html
  - query-expression - expression that limits the MBeans selected.  See "help query" for more information.
  - projection - specification of the attribute values to select.  Projections take the following form:
 
