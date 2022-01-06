@@ -9,7 +9,7 @@ Getting cjmx
 cjmx is available on Maven Central using groupId `com.github.cjmx` and artifactId `cjmx_2.12`.  An executable JAR is published using the `app` classifier.
 
  - cjmx artifacts on Maven Central: https://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.github.cjmx%22
- - Executable JAR using Scala 2.12: https://search.maven.org/remotecontent?filepath=com/github/cjmx/cjmx_2.12/2.8.0/cjmx_2.12-2.8.0-app.jar
+ - Executable JAR using Scala 2.12: https://search.maven.org/remotecontent?filepath=com/github/cjmx/cjmx_2.12/2.8.1/cjmx_2.12-2.8.1-app.jar
 
 Note: Both a regular and an application JAR (with embedded dependencies and minimized) are published on Maven Central.
 
@@ -22,7 +22,7 @@ Usage
 
 Launching cjmx is done via, using Java 8+:
 
-    java -cp $JAVA_HOME/lib/tools.jar:target/scala-2.12/proguard/cjmx_2.12-2.7.0-SNAPSHOT.jar cjmx.Main [PID]
+    java -cp $JAVA_HOME/lib/tools.jar:target/scala-2.12/proguard/cjmx_2.12-2.8.1-SNAPSHOT.jar cjmx.Main [PID]
 
 If a PID is specified on the command line, cjmx will attempt to connect to the local JVM with that PID; otherwise, cjmx starts in a disconnected state.
 
