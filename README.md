@@ -15,7 +15,7 @@ Note: Both a regular and an application JAR (with embedded dependencies and mini
 
 Building
 ========
-To build, run `./sbt publish-local`.  This will build `target/scala-2.12/proguard/cjmx_2.12-2.8.1-SNAPSHOT.jar` and install a copy to your local ivy cache.
+To build, run `sbt publish-local`.  This will build `target/scala-2.12/proguard/cjmx_2.12-2.8.1-SNAPSHOT.jar` and install a copy to your local ivy cache. Note this requires [sbt](https://www.scala-sbt.org) to be installed first.
 
 Usage
 =====
