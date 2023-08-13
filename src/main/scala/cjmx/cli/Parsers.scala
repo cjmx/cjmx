@@ -72,12 +72,17 @@ object Parsers:
   private def JMXUsername: Parser[String] = charClass(isScalaIDChar, "JMX username").*.string
 
   private def HostName: Parser[String] =
-    token(chars(('-' :: 'a'.to('z').toList ::: 0.to(9).toList).mkString("")).*.string, "hostname")
+    token(
+      chars(
+        ('-' :: '_' :: 'a'.to('z').toList ::: 'A'.to('Z').toList ::: 0.to(9).toList).mkString("")
+      ).*.string,
+      "hostname"
+    )
 
   private def IpAddress: Parser[String] =
     token(chars(('.' :: 0.to(9).toList).mkString("")).*.string, "ip address")
 
-  private def RemoteConnectionAddress(): Parser[((String, Int), Option[String])] =
+  private def RemoteConnectionAddress: Parser[((String, Int), Option[String])] =
     token(HostName | IpAddress, "hostname or address") ~ (token(":") ~> Port) ~ opt(
       token(token(' ') ~> JMXUsername)
     )
@@ -90,7 +95,7 @@ object Parsers:
     }
 
   private def RemoteConnect: Parser[actions.RemoteConnect] =
-    (token("remote-connect" ~> ' ') ~> (QuietFlag ~ RemoteConnectionAddress())).map:
+    (token("remote-connect" ~> ' ') ~> (QuietFlag ~ RemoteConnectionAddress)).map:
       case quiet ~ (host ~ port ~ username) => actions.RemoteConnect(host, port, username, quiet)
 
   def Connected(svr: MBeanServerConnection): Parser[Action] =
