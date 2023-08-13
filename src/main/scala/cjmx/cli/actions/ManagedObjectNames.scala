@@ -39,4 +39,3 @@ case class ManagedObjectNames(query: MBeanQuery) extends SimpleConnectedAction {
     context.formatter.formatNames(names)
   }
 }
-

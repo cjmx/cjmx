@@ -37,7 +37,7 @@ case class DescribeMBeans(query: MBeanQuery, detailed: Boolean) extends SimpleCo
   def act(context: ActionContext, connection: JMXConnection) = {
     val svr = connection.mbeanServer
     val names = svr.toScala.queryNames(query).toList.sorted
-    val info = names.map { name => name -> svr.getMBeanInfo(name) }
+    val info = names.map(name => name -> svr.getMBeanInfo(name))
     context.formatter.formatInfo(info.toList, detailed)
   }
 }

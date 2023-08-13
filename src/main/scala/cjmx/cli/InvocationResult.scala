@@ -44,9 +44,10 @@ object InvocationResult {
   final case object NoSuchOperation extends InvocationResult {
     override def toString = "no such operation"
   }
-  final case class NoOperationWithSignature(signature: Seq[Class[_]], validSignatures: Seq[String]) extends InvocationResult {
+  final case class NoOperationWithSignature(signature: Seq[Class[_]], validSignatures: Seq[String])
+      extends InvocationResult {
     override def toString = "no operation with signature (%s) - valid signatures:%n  %s".format(
-      signature.map { _.getSimpleName },
+      signature.map(_.getSimpleName),
       validSignatures.mkString("%n  ".format())
     )
   }

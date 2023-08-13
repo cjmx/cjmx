@@ -40,4 +40,3 @@ trait MessageFormatter {
   def formatInfo(info: Seq[(ObjectName, MBeanInfo)], detailed: Boolean): Seq[String]
   def formatInvocationResults(namesAndResults: Seq[(ObjectName, InvocationResult)]): Seq[String]
 }
-

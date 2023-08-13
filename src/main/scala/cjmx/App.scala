@@ -47,7 +47,7 @@ object App {
     val reader: Parser[_] => LineReader = if (args.isEmpty) {
       consoleReader
     } else {
-      val firstArgAsConnect = Try(args.head.toInt).toOption.map { pid => "connect -q " + pid }
+      val firstArgAsConnect = Try(args.head.toInt).toOption.map(pid => "connect -q " + pid)
       firstArgAsConnect match {
         case None =>
           val r = constReader(args :+ "exit")
@@ -72,11 +72,15 @@ object App {
     }
   }
 
-  private def prefixedReader(first: Array[String], next: Parser[_] => LineReader): Parser[_] => LineReader = {
+  private def prefixedReader(
+      first: Array[String],
+      next: Parser[_] => LineReader
+  ): Parser[_] => LineReader = {
     val firstReader = constReader(first)
-    p => new LineReader {
-      override def readLine(prompt: String, mask: Option[Char]) =
-        firstReader.readLine(prompt, mask) orElse (next(p).readLine(prompt, mask))
-    }
+    p =>
+      new LineReader {
+        override def readLine(prompt: String, mask: Option[Char]) =
+          firstReader.readLine(prompt, mask).orElse(next(p).readLine(prompt, mask))
+      }
   }
 }

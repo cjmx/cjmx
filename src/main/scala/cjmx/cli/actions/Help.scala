@@ -33,7 +33,7 @@ package actions
 
 import scala.collection.JavaConverters._
 
-import java.io.{ BufferedReader, InputStreamReader }
+import java.io.{BufferedReader, InputStreamReader}
 
 case class Help(topic: Option[String]) extends Action {
   def apply(context: ActionContext) = {
@@ -46,14 +46,12 @@ case class Help(topic: Option[String]) extends Action {
       case Right(resource) =>
         val lines: List[String] = {
           val reader = new BufferedReader(new InputStreamReader(resource))
-          try {
+          try
             reader.lines.collect(java.util.stream.Collectors.toList[String]).asScala.toList
-          } finally {
+          finally
             reader.close()
-          }
         }
         ActionResult(context.withStatusCode(0), lines)
     }
   }
 }
-

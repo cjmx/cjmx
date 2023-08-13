@@ -37,20 +37,20 @@ final class OutputBuilder {
   private val _lines = ListBuffer[String]()
   private var indentation = 0
 
-  def indent() { indentation += 1 }
-  def outdent() { indentation = (indentation - 1) max 0 }
+  def indent(): Unit = indentation += 1
+  def outdent(): Unit = indentation = (indentation - 1).max(0)
 
-  def <+(ln: String) { _lines += indentedStr(ln) }
-  def <++(lns: Traversable[String]) { _lines ++= (lns map indentedStr) }
+  def <+(ln: String): Unit = _lines += indentedStr(ln)
+  def <++(lns: Traversable[String]): Unit = _lines ++= (lns.map(indentedStr))
 
-  def indented(f: => Any) {
+  def indented(f: => Any): Unit = {
     indent()
     try f
     finally outdent()
   }
 
-  private def indentedStr(s: String) = s.split(newline).map { l => (" " * (indentation * 2)) + l }.mkString(newline)
+  private def indentedStr(s: String) =
+    s.split(newline).map(l => (" " * (indentation * 2)) + l).mkString(newline)
 
   def lines: List[String] = _lines.toList
 }
-

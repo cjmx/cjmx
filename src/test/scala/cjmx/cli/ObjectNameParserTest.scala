@@ -39,7 +39,6 @@ import org.scalatest._
 
 import JMXParsers._
 
-
 class ObjectNameParserTest extends FunSuite with Matchers {
 
   val validExamples = Seq(
@@ -77,9 +76,9 @@ class ObjectNameParserTest extends FunSuite with Matchers {
     "*Domain:description=P*,*"
   )
 
-  validExamples foreach { ex =>
+  validExamples.foreach { ex =>
     test("valid - " + ex) {
-      parse(ex) should be (Right(new ObjectName(ex)))
+      parse(ex) should be(Right(new ObjectName(ex)))
     }
   }
 
@@ -89,11 +88,11 @@ class ObjectNameParserTest extends FunSuite with Matchers {
     ":key=v1,key=v2" // duplicate key
   )
 
-  invalidExamples foreach { ex =>
+  invalidExamples.foreach { ex =>
     test("invalid - " + ex) {
       // sanity check example is invalid
-      a[MalformedObjectNameException] should be thrownBy { new ObjectName(ex) }
-      parse(ex) should be ('left)
+      a[MalformedObjectNameException] should be thrownBy new ObjectName(ex)
+      parse(ex) should be('left)
     }
   }
 
@@ -102,18 +101,36 @@ class ObjectNameParserTest extends FunSuite with Matchers {
 
   val completionExamples = Seq(
     ("java.lang:", Set("*", "<key>=", "name=", "type=")),
-    ("java.lang:type=", Set("*", "<value>", "ClassLoading", "Compilation", "GarbageCollector", "Memory", "MemoryManager", "MemoryPool", "OperatingSystem", "Runtime", "Threading")),
+    (
+      "java.lang:type=",
+      Set(
+        "*",
+        "<value>",
+        "ClassLoading",
+        "Compilation",
+        "GarbageCollector",
+        "Memory",
+        "MemoryManager",
+        "MemoryPool",
+        "OperatingSystem",
+        "Runtime",
+        "Threading"
+      )
+    ),
     ("java.lang:type=M", Set("Memory", "MemoryManager", "MemoryPool")),
     ("java.lang:type=MemoryPool,", Set("*", "<key>=", "name=")),
     ("java.lang:type=MemoryPool,name=Code Cache,", Set("*", "<key>="))
   )
 
-  completionExamples foreach { case (str, expected) =>
+  completionExamples.foreach { case (str, expected) =>
     test("completion - " + str) {
-      completions(str) should be (expected)
+      completions(str) should be(expected)
     }
   }
 
   def completions(str: String): Set[String] =
-    Parser.completions(ObjectNameParser(ManagementFactory.getPlatformMBeanServer), str, Int.MaxValue).get.map { _.display }
+    Parser
+      .completions(ObjectNameParser(ManagementFactory.getPlatformMBeanServer), str, Int.MaxValue)
+      .get
+      .map(_.display)
 }

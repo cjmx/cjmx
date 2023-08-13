@@ -61,7 +61,7 @@ package object jmx {
       try self.getAttributes(name, attributeNames).asScala.toSeq.asInstanceOf[Seq[Attribute]]
       catch {
         case (_: UnmarshalException | _: JMException) =>
-          attributeNames map { attrName =>
+          attributeNames.map { attrName =>
             attribute(name, attrName).getOrElse(new Attribute(attrName, "unavailable"))
           }
       }

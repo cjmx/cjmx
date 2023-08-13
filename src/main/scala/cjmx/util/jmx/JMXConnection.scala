@@ -39,7 +39,7 @@ import javax.management.remote.JMXConnector
 /** Provides access to a local or remote MBean server. */
 abstract class JMXConnection {
   def mbeanServer: MBeanServerConnection
-  def dispose()
+  def dispose(): Unit
 }
 
 object JMXConnection {
@@ -50,6 +50,6 @@ object JMXConnection {
 
   val PlatformMBeanServerConnection: JMXConnection = new JMXConnection {
     override def mbeanServer = ManagementFactory.getPlatformMBeanServer
-    override def dispose() {}
+    override def dispose() = ()
   }
 }

@@ -41,4 +41,3 @@ trait SimpleConnectedAction extends ConnectedAction {
   }
   def act(context: ActionContext, connection: JMXConnection): Seq[String]
 }
-

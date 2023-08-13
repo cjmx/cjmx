@@ -35,14 +35,13 @@ import org.scalatest._
 import sbt.internal.util.complete.Parser
 import cjmx.util.jmx.JMXConnection
 
-
 class ExampleEmbedding extends FunSuite with Matchers {
 
   test("Example of running mbean actions against current jvm") {
-    val result = runMBeanAction("mbeans 'java.lang:type=Memory' select *").fold(e => Vector(e), identity)
-    result(0) should be ("java.lang:type=Memory")
+    val result =
+      runMBeanAction("mbeans 'java.lang:type=Memory' select *").fold(e => Vector(e), identity)
+    result(0) should be("java.lang:type=Memory")
   }
-
 
   def runMBeanAction(str: String): Either[String, Vector[String]] = {
     val cnx = JMXConnection.PlatformMBeanServerConnection

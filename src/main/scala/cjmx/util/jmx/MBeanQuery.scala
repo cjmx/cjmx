@@ -41,4 +41,3 @@ object MBeanQuery {
   def apply(where: QueryExp): MBeanQuery = MBeanQuery(None, Some(where))
   def apply(from: ObjectName, where: QueryExp): MBeanQuery = MBeanQuery(Some(from), Some(where))
 }
-
