@@ -35,23 +35,25 @@ Compile / unmanagedResources ++= {
 
 libraryDependencies ++=
   "com.github.cjmx" % "cjmx-ext" % "1.0.0.RELEASE" ::
-  "org.scala-sbt" %% "completion" % "1.0.4" ::
-  "com.google.code.gson" % "gson" % "2.2.2" ::
-  "org.scalatest" %% "scalatest" % "3.0.0" % "test" ::
-  Nil
+    "org.scala-sbt" %% "completion" % "1.0.4" ::
+    "com.google.code.gson" % "gson" % "2.2.2" ::
+    "org.scalatest" %% "scalatest" % "3.0.0" % "test" ::
+    Nil
 
 Proguard / proguardVersion := "5.2.1"
-Proguard / proguardOptions ++= Seq(ProguardOptions.keepMain("cjmx.Main"),
+Proguard / proguardOptions ++= Seq(
+  ProguardOptions.keepMain("cjmx.Main"),
   "-dontobfuscate",
   "-dontoptimize",
   "-ignorewarnings",
   "-keepparameternames",
-  "-keepattributes *")
+  "-keepattributes *"
+)
 Proguard / proguardInputFilter := { file =>
   file.name match {
-    case f if f startsWith "jansi-" => Some("!**")
-    case "tools.jar" => Some("!META-INF/**")
-    case _ => Some("!META-INF/MANIFEST.MF")
+    case f if f.startsWith("jansi-") => Some("!**")
+    case "tools.jar"                 => Some("!META-INF/**")
+    case _                           => Some("!META-INF/MANIFEST.MF")
   }
 }
 
@@ -64,4 +66,3 @@ proguardOutputJar := {
 }
 
 addArtifact(Artifact("cjmx", "app"), proguardOutputJar).settings
-
