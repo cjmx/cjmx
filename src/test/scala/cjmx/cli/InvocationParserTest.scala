@@ -37,7 +37,7 @@ import sbt.internal.util.complete.Parser
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 
-class InvocationParserTest extends AnyFunSuite with Matchers {
+class InvocationParserTest extends AnyFunSuite with Matchers:
 
   val validExamples: Seq[(String, (String, Seq[Any]))] = Seq(
     "gc()" -> ("gc" -> Seq.empty[AnyRef]),
@@ -49,18 +49,15 @@ class InvocationParserTest extends AnyFunSuite with Matchers {
   )
 
   validExamples.foreach { case (ex, (expectedName, expectedArgs)) =>
-    test("valid - " + ex) {
+    test("valid - " + ex):
       val result = parse(ex)
       result.map(_._1) should be(Right(expectedName))
       result.map {
-        _._2.collect {
+        _._2.collect:
           case a: Array[?] => a.toSeq
           case o           => o
-        }
       } should be(Right(expectedArgs))
-    }
   }
 
   private def parse(str: String): Either[String, (String, Seq[AnyRef])] =
     Parser.parse(str, JMXParsers.Invocation(ManagementFactory.getPlatformMBeanServer, None))
-}

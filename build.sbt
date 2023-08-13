@@ -10,6 +10,7 @@ ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("17"))
 
 ThisBuild / scalaVersion := crossScalaVersions.value.last
 ThisBuild / crossScalaVersions := Seq("3.3.0")
+ThisBuild / scalacOptions := (ThisBuild / scalacOptions).value.filterNot(_ == "-source:3.0-migration") :+ "-source:future"
 
 ThisBuild / licenses := List(
   ("BSD-3-Clause", url("https://github.com/cjmx/cjmx/blob/main/LICENSE"))

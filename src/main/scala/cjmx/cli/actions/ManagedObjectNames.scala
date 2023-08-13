@@ -31,11 +31,9 @@
 package cjmx.cli
 package actions
 
-import cjmx.util.jmx._
+import cjmx.util.jmx.*
 
-case class ManagedObjectNames(query: MBeanQuery) extends SimpleConnectedAction {
-  def act(context: ActionContext, connection: JMXConnection) = {
-    val names = connection.mbeanServer.toScala.queryNames(query).toList.sorted
+case class ManagedObjectNames(query: MBeanQuery) extends SimpleConnectedAction:
+  def act(context: ActionContext, connection: JMXConnection) =
+    val names = connection.mbeanServer.queryNames(query).toList.sorted
     context.formatter.formatNames(names)
-  }
-}

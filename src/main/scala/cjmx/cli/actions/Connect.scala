@@ -31,9 +31,9 @@
 package cjmx.cli
 package actions
 
-import cjmx.util.jmx.Attach
+import cjmx.util.jmx.{Attach, JMXConnection}
 
-case class Connect(vmid: String, quiet: Boolean) extends Action {
+case class Connect(vmid: String, quiet: Boolean) extends Action:
   def apply(context: ActionContext) =
     Attach
       .localConnect(vmid)
@@ -42,8 +42,8 @@ case class Connect(vmid: String, quiet: Boolean) extends Action {
         cnx => {
           val server = cnx.getMBeanServerConnection
           ActionResult(
-            context.connected(cnx),
-            if (quiet) List.empty
+            context.connected(JMXConnection.fromConnector(cnx)),
+            if quiet then List.empty
             else
               List(
                 s"Connected to local virtual machine ${vmid}",
@@ -54,4 +54,3 @@ case class Connect(vmid: String, quiet: Boolean) extends Action {
           )
         }
       )
-}

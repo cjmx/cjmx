@@ -30,9 +30,9 @@
 
 package cjmx.util
 
-object Math {
+object Math:
 
-  def liftToBigDecimal: AnyRef => Option[BigDecimal] = _ match {
+  def liftToBigDecimal: AnyRef => Option[BigDecimal] = _ match
     case bi: java.math.BigInteger   => Some(BigDecimal(new BigInt(bi)))
     case sbi: scala.math.BigInt     => Some(BigDecimal(sbi))
     case bd: java.math.BigDecimal   => Some(BigDecimal(bd))
@@ -43,6 +43,3 @@ object Math {
     case f: java.lang.Float         => Some(BigDecimal((f: Float).toDouble))
     case d: java.lang.Double        => Some(BigDecimal(d))
     case _                          => None
-  }
-
-}

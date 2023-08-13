@@ -37,7 +37,7 @@ import sbt.internal.util.complete.Parsers.Digit
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 
-class ExpressionParserTest extends AnyFunSuite with Matchers {
+class ExpressionParserTest extends AnyFunSuite with Matchers:
 
   val validExamples = Seq(
     "1 + 2" -> "(+ 1 2)",
@@ -54,9 +54,8 @@ class ExpressionParserTest extends AnyFunSuite with Matchers {
   )
 
   validExamples.foreach { case (ex, expectedOutput) =>
-    test("valid - " + ex) {
+    test("valid - " + ex):
       parse(ex) should be(Right(expectedOutput))
-    }
   }
 
   private def parse(str: String): Either[String, String] =
@@ -71,4 +70,3 @@ class ExpressionParserTest extends AnyFunSuite with Matchers {
         def Value: Parser[Expression] = Digit.+.string
       }.Expr
     )
-}

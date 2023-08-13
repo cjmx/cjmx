@@ -34,7 +34,7 @@ import sbt.internal.util.complete.Parser
 import sbt.internal.util.complete.DefaultParsers.SpaceClass
 
 /** Provides generic parsers that add to the functionality provided by SBT complete. */
-object MoreParsers {
+object MoreParsers:
 
   /** Creates a `Parser[Seq[B]]` from a `A => Parser[(A, B)]`.
     *
@@ -44,16 +44,13 @@ object MoreParsers {
     *
     * Note: this method is recursive but not tail recursive.
     */
-  def repFlatMap[S, A](init: S)(p: S => Parser[(S, A)]): Parser[Seq[A]] = {
+  def repFlatMap[S, A](init: S)(p: S => Parser[(S, A)]): Parser[Seq[A]] =
     def repFlatMapR(last: S, acc: Seq[A])(p: S => Parser[(S, A)]): Parser[Seq[A]] =
       p(last).?.flatMap { more =>
-        more match {
+        more match
           case Some((s, a)) => repFlatMapR(s, a +: acc)(p)
           case None         => Parser.success(acc.reverse)
-        }
       }
     repFlatMapR(init, Seq.empty)(p)
-  }
 
   def ws = SpaceClass
-}

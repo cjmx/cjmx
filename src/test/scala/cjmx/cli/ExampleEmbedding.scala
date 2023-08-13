@@ -36,26 +36,21 @@ import org.scalatest.matchers.should.Matchers
 import sbt.internal.util.complete.Parser
 import cjmx.util.jmx.JMXConnection
 
-class ExampleEmbedding extends AnyFunSuite with Matchers {
+class ExampleEmbedding extends AnyFunSuite with Matchers:
 
-  test("Example of running mbean actions against current jvm") {
+  test("Example of running mbean actions against current jvm"):
     val result =
       runMBeanAction("mbeans 'java.lang:type=Memory' select *").fold(e => Vector(e), identity)
     result(0) should be("java.lang:type=Memory")
-  }
 
-  def runMBeanAction(str: String): Either[String, Vector[String]] = {
+  def runMBeanAction(str: String): Either[String, Vector[String]] =
     val cnx = JMXConnection.PlatformMBeanServerConnection
-    for {
+    for
       action <- Parser.parse(str, Parsers.MBeanAction(cnx.mbeanServer))
-      msgs <- {
+      msgs <-
         val initialCtx = ActionContext.embedded(connectionState = ConnectionState.Connected(cnx))
         val ActionResult(ctx, msgs) = action(initialCtx)
-        if (ctx.lastStatusCode != 0)
+        if ctx.lastStatusCode != 0 then
           Left("Action failed with status code: " + ctx.lastStatusCode)
-        else
-          Right(msgs)
-      }
-    } yield msgs.toVector
-  }
-}
+        else Right(msgs)
+    yield msgs.toVector

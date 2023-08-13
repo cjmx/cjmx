@@ -34,29 +34,27 @@ import scala.collection.immutable.Seq
 
 import javax.management.{ObjectName, Attribute, MBeanInfo}
 
-import cjmx.util.jmx.JMX._
+import cjmx.util.jmx.JMX.*
 
-object TextMessageFormatter extends MessageFormatter {
+object TextMessageFormatter extends MessageFormatter:
 
   override def formatNames(names: Seq[ObjectName]) =
     names.map(_.toString)
 
-  override def formatAttributes(attrsByName: Seq[(ObjectName, Seq[Attribute])]) = {
+  override def formatAttributes(attrsByName: Seq[(ObjectName, Seq[Attribute])]) =
     val out = new OutputBuilder
     attrsByName.foreach { case (name, attrs) =>
       out <+ name.toString
       out <+ ("-" * name.toString.size)
-      out.indented {
+      out.indented:
         attrs.foreach(attr => out <+ attr.toString)
-      }
       out <+ ""
     }
     out.lines
-  }
 
-  override def formatInfo(info: Seq[(ObjectName, MBeanInfo)], detailed: Boolean) = {
+  override def formatInfo(info: Seq[(ObjectName, MBeanInfo)], detailed: Boolean) =
     val out = new OutputBuilder
-    for ((name, inf) <- info) {
+    for (name, inf) <- info do
       val nameLine = "Object name: %s".format(name)
       out <+ nameLine
       out <+ ("-" * nameLine.size)
@@ -64,23 +62,21 @@ object TextMessageFormatter extends MessageFormatter {
       out <+ ""
 
       val attributes = inf.getAttributes
-      if (attributes.nonEmpty) {
+      if attributes.nonEmpty then
         out <+ "Attributes:"
-        out.indented {
+        out.indented:
           attributes.foreach { attr =>
             out <+ "%s: %s".format(attr.getName, JType(attr.getType).toString)
-            if (detailed) out.indented {
-              out <+ "Description: %s".format(attr.getDescription)
-            }
+            if detailed then
+              out.indented:
+                out <+ "Description: %s".format(attr.getDescription)
           }
-        }
         out <+ ""
-      }
 
       val operations = inf.getOperations
-      if (operations.nonEmpty) {
+      if operations.nonEmpty then
         out <+ "Operations:"
-        out.indented {
+        out.indented:
           operations.foreach { op =>
             out <+ "%s(%s): %s".format(
               op.getName,
@@ -89,35 +85,27 @@ object TextMessageFormatter extends MessageFormatter {
                 .mkString(", "),
               JType(op.getReturnType).toString
             )
-            if (detailed) out.indented {
-              out <+ "Description: %s".format(op.getDescription)
-            }
+            if detailed then
+              out.indented:
+                out <+ "Description: %s".format(op.getDescription)
           }
-        }
         out <+ ""
-      }
 
       val notifications = inf.getNotifications
-      if (notifications.nonEmpty) {
+      if notifications.nonEmpty then
         out <+ "Notifications:"
-        out.indented {
+        out.indented:
           notifications.foreach { nt =>
             out <+ nt.getName
-            if (detailed) out.indented {
-              out <+ "Description: %S".format(nt.getDescription)
-              out <+ "Notification types:"
-              out.indented {
-                nt.getNotifTypes.foreach(out <+ _)
-              }
-            }
+            if detailed then
+              out.indented:
+                out <+ "Description: %S".format(nt.getDescription)
+                out <+ "Notification types:"
+                out.indented:
+                  nt.getNotifTypes.foreach(out <+ _)
           }
-        }
         out <+ ""
-      }
-    }
     out.lines
-  }
 
   override def formatInvocationResults(namesAndResults: Seq[(ObjectName, InvocationResult)]) =
     namesAndResults.map { case (name, result) => "%s: %s".format(name, result) }
-}

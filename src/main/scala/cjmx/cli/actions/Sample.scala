@@ -33,54 +33,43 @@ package actions
 
 import java.util.concurrent.{Executors, LinkedBlockingQueue, TimeUnit}
 
-// import scala.concurrent.duration._
+// import scala.concurrent.duration.*
 
-case class Sample(query: Query, periodSeconds: Int, durationSeconds: Int) extends Action {
-  def apply(context: ActionContext) = {
+case class Sample(query: Query, periodSeconds: Int, durationSeconds: Int) extends Action:
+  def apply(context: ActionContext) =
     @volatile var done = false
 
     val queue = new LinkedBlockingQueue[Option[String]]
     val scheduler = Executors.newScheduledThreadPool(1)
 
-    val pollForDone = new Runnable {
+    val pollForDone = new Runnable:
       override def run =
-        while (!done && System.in.available > 0)
-          if (System.in.read == '\n') {
+        while !done && System.in.available > 0 do
+          if System.in.read == '\n' then
             queue.put(None)
             done = true
-          }
-    }
     scheduler.scheduleWithFixedDelay(pollForDone, 0, 100, TimeUnit.MILLISECONDS)
 
-    val sample = new Runnable {
+    val sample = new Runnable:
       override def run =
-        if (!done) {
-          query(context).output.foreach(msg => queue.put(Some(msg)))
-        }
-    }
+        if !done then query(context).output.foreach(msg => queue.put(Some(msg)))
     scheduler.scheduleWithFixedDelay(sample, 0, periodSeconds.toLong, TimeUnit.SECONDS)
 
-    val cancel = new Runnable {
-      override def run = {
+    val cancel = new Runnable:
+      override def run =
         queue.put(None)
         scheduler.shutdownNow()
         ()
-      }
-    }
     scheduler.schedule(cancel, durationSeconds.toLong, TimeUnit.SECONDS)
 
-    val output: Iterator[String] = new Iterator[String] {
+    val output: Iterator[String] = new Iterator[String]:
       private var end = false
       var next: String = null
       def hasNext =
-        if (end) false
+        if end then false
         else
-          queue.take() match {
+          queue.take() match
             case Some(msg) => next = msg; true
             case None      => end = true; false
-          }
-    }
 
     ActionResult(context, output)
-  }
-}

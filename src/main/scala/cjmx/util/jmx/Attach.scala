@@ -30,14 +30,14 @@
 
 package cjmx.util.jmx
 
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 import scala.util.control.NonFatal
 
 import java.util.Hashtable
-import javax.management.remote._
-import com.sun.tools.attach._
+import javax.management.remote.*
+import com.sun.tools.attach.*
 
-object Attach {
+object Attach:
   def localVMs: List[VirtualMachineDescriptor] =
     VirtualMachine.list.asScala.toList.sortBy(_.id)
 
@@ -47,7 +47,7 @@ object Attach {
   def remoteConnect(
       addr: String,
       credentials: Option[JMXCredentials]
-  ): Either[String, JMXConnector] = {
+  ): Either[String, JMXConnector] =
     val env = credentials.map { cred =>
       val ht = new Hashtable[String, Array[String]]
       val credentials = Array(cred.username, cred.password)
@@ -55,12 +55,9 @@ object Attach {
       ht
     }
     try Right(JMXConnectorFactory.connect(new JMXServiceURL(addr), env.orNull))
-    catch {
-      case NonFatal(t) => Left(Option(t.getMessage).getOrElse(""))
-    }
-  }
+    catch case NonFatal(t) => Left(Option(t.getMessage).getOrElse(""))
 
-  def localConnect(vmid: String): Either[String, JMXConnector] = for {
+  def localConnect(vmid: String): Either[String, JMXConnector] = for
     vmd <- localVMs
       .find(_.id == vmid)
       .toRight("No virtual machine with VM ID %s".format(vmid))
@@ -71,16 +68,13 @@ object Attach {
     cnx <-
       try Right(JMXConnectorFactory.connect(new JMXServiceURL(addr)))
       catch { case NonFatal(t) => Left(Option(t.getMessage).getOrElse("")) }
-  } yield cnx
+  yield cnx
 
-  def localConnectorAddress(vm: VirtualMachine): Either[String, String] = {
+  def localConnectorAddress(vm: VirtualMachine): Either[String, String] =
     def getLocalConnectorAddress = Option(
       vm.getAgentProperties.getProperty("com.sun.management.jmxremote.localConnectorAddress")
     )
-    val localConnectorAddress = getLocalConnectorAddress.orElse {
+    val localConnectorAddress = getLocalConnectorAddress.orElse:
       vm.startLocalManagementAgent()
       getLocalConnectorAddress
-    }
     localConnectorAddress.toRight("Failed to connect to VM ID %s.".format(vm.id))
-  }
-}

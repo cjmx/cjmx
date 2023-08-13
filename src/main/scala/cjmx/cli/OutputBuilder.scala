@@ -32,7 +32,7 @@ package cjmx.cli
 
 import scala.collection.mutable.ListBuffer
 
-final class OutputBuilder {
+final class OutputBuilder:
   private val newline = "%n".format()
   private val _lines = ListBuffer[String]()
   private var indentation = 0
@@ -43,14 +43,12 @@ final class OutputBuilder {
   def <+(ln: String): Unit = _lines += indentedStr(ln)
   def <++(lns: Traversable[String]): Unit = _lines ++= (lns.map(indentedStr))
 
-  def indented(f: => Any): Unit = {
+  def indented(f: => Any): Unit =
     indent()
     try f
     finally outdent()
-  }
 
   private def indentedStr(s: String) =
     s.split(newline).map(l => (" " * (indentation * 2)) + l).mkString(newline)
 
   def lines: List[String] = _lines.toList
-}

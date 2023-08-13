@@ -31,51 +31,48 @@
 package cjmx.cli
 
 import scala.collection.immutable.Seq
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 import scala.collection.mutable.LinkedHashMap
 
 import java.lang.reflect.Type
 import java.text.DateFormat
 import javax.management.{ObjectName, Attribute, MBeanInfo}
-import javax.management.openmbean._
+import javax.management.openmbean.*
 
 import cjmx.util.jmx.JMX
-import com.google.gson._
+import com.google.gson.*
 
-object JsonMessageFormatter {
+object JsonMessageFormatter:
 
-  val standard: JsonMessageFormatter = new JsonMessageFormatter {
-    private object TabularDataSupportSerializer extends JsonSerializer[TabularDataSupport] {
+  val standard: JsonMessageFormatter = new JsonMessageFormatter:
+    private object TabularDataSupportSerializer extends JsonSerializer[TabularDataSupport]:
       override def serialize(
           src: TabularDataSupport,
           typeOfSrc: Type,
           context: JsonSerializationContext
-      ) = {
+      ) =
         val arr: JsonArray = new JsonArray()
         src.asScala.foreach { case (_, value) =>
           arr.add(context.serialize(value))
         }
         arr
-      }
-    }
 
     val gson = gsonBuilder
       .registerTypeHierarchyAdapter(classOf[TabularDataSupport], TabularDataSupportSerializer)
       .create
-  }
 
-  val compact: JsonMessageFormatter = new JsonMessageFormatter {
-    private object CompactTabularDataSupportSerializer extends JsonSerializer[TabularDataSupport] {
+  val compact: JsonMessageFormatter = new JsonMessageFormatter:
+    private object CompactTabularDataSupportSerializer extends JsonSerializer[TabularDataSupport]:
       override def serialize(
           src: TabularDataSupport,
           typeOfSrc: Type,
           context: JsonSerializationContext
-      ) = {
+      ) =
         val tabularType = src.getTabularType
         val compositeType = tabularType.getRowType
         val keys = compositeType.keySet.asScala.toSet
 
-        src.getTabularType.getIndexNames.asScala.toList match {
+        src.getTabularType.getIndexNames.asScala.toList match
           // Optimize JSON for tables with single key
           case uniqueKey :: Nil =>
             val obj: JsonObject = new JsonObject()
@@ -83,12 +80,11 @@ object JsonMessageFormatter {
               val rest = (keys - uniqueKey).toList
               val indexKey = JMX.JKey(value.get(uniqueKey)).toString
 
-              rest match {
+              rest match
                 case singleKey :: Nil =>
                   indexKey -> context.serialize(value.get(singleKey))
                 case _ =>
                   indexKey -> context.serialize(value.getAll(rest.toArray))
-              }
             }
             entries.sortBy(_._1).foreach { case (key, value) =>
               obj.add(key, value)
@@ -101,9 +97,6 @@ object JsonMessageFormatter {
               arr.add(context.serialize(value))
             }
             arr
-        }
-      }
-    }
 
     val gson = gsonBuilder
       .registerTypeHierarchyAdapter(
@@ -111,10 +104,8 @@ object JsonMessageFormatter {
         CompactTabularDataSupportSerializer
       )
       .create
-  }
-}
 
-abstract class JsonMessageFormatter extends MessageFormatter {
+abstract class JsonMessageFormatter extends MessageFormatter:
   val gsonBuilder = new GsonBuilder()
     .registerTypeAdapter(classOf[ObjectName], ObjectNameSerializer)
     .registerTypeAdapter(classOf[Attributes], AttributesSerializer)
@@ -145,54 +136,44 @@ abstract class JsonMessageFormatter extends MessageFormatter {
   override def formatInvocationResults(namesAndResults: Seq[(ObjectName, InvocationResult)]) =
     toJson(toLinkedHashMap(namesAndResults))
 
-  private object ObjectNameSerializer extends JsonSerializer[ObjectName] {
+  private object ObjectNameSerializer extends JsonSerializer[ObjectName]:
     override def serialize(src: ObjectName, typeOfSrc: Type, context: JsonSerializationContext) =
       new JsonPrimitive(src.toString)
-  }
 
   private case class Attributes(attrs: Seq[Attribute])
-  private object AttributesSerializer extends JsonSerializer[Attributes] {
-    override def serialize(src: Attributes, typeOfSrc: Type, context: JsonSerializationContext) = {
+  private object AttributesSerializer extends JsonSerializer[Attributes]:
+    override def serialize(src: Attributes, typeOfSrc: Type, context: JsonSerializationContext) =
       val obj = new JsonObject
       src.attrs.foreach { attr =>
-        attr.getValue match {
+        attr.getValue match
           case vd: java.lang.Double if vd.isNaN || vd.isInfinite =>
             obj.add(attr.getName, context.serialize(vd.toString))
           case vf: java.lang.Float if vf.isNaN || vf.isInfinite =>
             obj.add(attr.getName, context.serialize(vf.toString))
           case v => obj.add(attr.getName, context.serialize(v))
-        }
       }
       obj
-    }
-  }
 
-  private object CompositeDataSerializer extends JsonSerializer[CompositeData] {
+  private object CompositeDataSerializer extends JsonSerializer[CompositeData]:
     override def serialize(
         src: CompositeData,
         typeOfSrc: Type,
         context: JsonSerializationContext
-    ) = {
+    ) =
       val keys = src.getCompositeType.keySet.asScala.toSeq.sorted
       val keysAndValues = keys.zip(src.getAll(keys.toArray).toSeq)
       context.serialize(toLinkedHashMap(keysAndValues))
-    }
-  }
 
-  private object InvocationResultSerializer extends JsonSerializer[InvocationResult] {
+  private object InvocationResultSerializer extends JsonSerializer[InvocationResult]:
     override def serialize(
         src: InvocationResult,
         typeOfSrc: Type,
         context: JsonSerializationContext
-    ) = {
+    ) =
       val obj = new JsonObject
-      val (successful, result) = src match {
+      val (successful, result) = src match
         case InvocationResult.Succeeded(value) => (true, value)
         case other                             => (false, other.toString)
-      }
       obj.addProperty("successful", successful)
       obj.add("result", context.serialize(result))
       obj
-    }
-  }
-}

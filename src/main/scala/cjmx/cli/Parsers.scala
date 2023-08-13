@@ -33,15 +33,15 @@ package cjmx.cli
 import scala.collection.immutable.Seq
 
 import sbt.internal.util.complete.Parser
-import sbt.internal.util.complete.DefaultParsers._
+import sbt.internal.util.complete.DefaultParsers.*
 
-import javax.management._
+import javax.management.*
 
 import cjmx.util.jmx.{MBeanQuery, JMX}
-import JMXParsers._
+import JMXParsers.*
 
-object Parsers {
-  import Parser._
+object Parsers:
+  import Parser.*
 
   private lazy val GlobalActions: Parser[Action] = Exit | Help | SetFormat | Status
 
@@ -67,7 +67,7 @@ object Parsers {
     (token("list") | token("jps")) ^^^ actions.ListVMs
 
   private def VMID(vms: Seq[JMX.VMID]): Parser[String] =
-    token(Digit.+.string.examples(vms.map(_.value): _*))
+    token(Digit.+.string.examples(vms.map(_.value)*))
 
   private def JMXUsername: Parser[String] = charClass(isScalaIDChar, "JMX username").*.string
 
@@ -90,9 +90,8 @@ object Parsers {
     }
 
   private def RemoteConnect: Parser[actions.RemoteConnect] =
-    (token("remote-connect" ~> ' ') ~> (QuietFlag ~ RemoteConnectionAddress())).map {
+    (token("remote-connect" ~> ' ') ~> (QuietFlag ~ RemoteConnectionAddress())).map:
       case quiet ~ (host ~ port ~ username) => actions.RemoteConnect(host, port, username, quiet)
-    }
 
   def Connected(svr: MBeanServerConnection): Parser[Action] =
     MBeanAction(svr) | PrefixNames(svr) | PrefixDescribe(svr) | PrefixSelect(svr) | PrefixSample(
@@ -100,20 +99,20 @@ object Parsers {
     ) | PrefixInvoke(svr) | Disconnect | GlobalActions !!! "Invalid input"
 
   def MBeanAction(svr: MBeanServerConnection): Parser[Action] =
-    for {
+    for
       _ <- token("mbeans ")
       query <- MBeanQueryP(svr) <~ SpaceClass.*
       action <- PostfixNames(svr, query) | PostfixSelect(svr, query) | PostfixSample(
         svr,
         query
       ) | PostfixDescribe(svr, query) | PostfixInvoke(svr, query)
-    } yield action
+    yield action
 
   private def MBeanQueryP(svr: MBeanServerConnection): Parser[MBeanQuery] =
-    for {
+    for
       name <- QuotedObjectNameParser(svr)
       query <- (token(" where ") ~> JMXParsers.QueryExpParser(svr, name)).?
-    } yield MBeanQuery(Some(name), query)
+    yield MBeanQuery(Some(name), query)
 
   private def PrefixNames(svr: MBeanServerConnection): Parser[actions.ManagedObjectNames] =
     (token("names") ^^^ actions.ManagedObjectNames(MBeanQuery.All)) |
@@ -141,9 +140,8 @@ object Parsers {
     }
 
   private def PrefixSelect(svr: MBeanServerConnection): Parser[actions.Query] =
-    (SelectClause(svr, None) ~ (token(" from ") ~> MBeanQueryP(svr))).map {
+    (SelectClause(svr, None) ~ (token(" from ") ~> MBeanQueryP(svr))).map:
       case projection ~ query => actions.Query(query, projection)
-    }
 
   private def PostfixSelect(svr: MBeanServerConnection, query: MBeanQuery): Parser[actions.Query] =
     SelectClause(svr, Some(query)).map { case projection =>
@@ -157,10 +155,9 @@ object Parsers {
     token("select ") ~> SpaceClass.* ~> JMXParsers.Projection(svr, query)
 
   private def PrefixSample(svr: MBeanServerConnection): Parser[actions.Sample] =
-    (SampleClause(svr, None) ~ (token(" from ") ~> MBeanQueryP(svr)) ~ SampleTimingClause).map {
+    (SampleClause(svr, None) ~ (token(" from ") ~> MBeanQueryP(svr)) ~ SampleTimingClause).map:
       case projection ~ query ~ timing =>
         actions.Sample(actions.Query(query, projection), timing._1, timing._2)
-    }
 
   private def PostfixSample(svr: MBeanServerConnection, query: MBeanQuery): Parser[actions.Sample] =
     (SampleClause(svr, Some(query)) ~ SampleTimingClause).map { case projection ~ timing =>
@@ -187,10 +184,8 @@ object Parsers {
       svr: MBeanServerConnection,
       query: MBeanQuery
   ): Parser[actions.InvokeOperation] =
-    (token("invoke ") ~> SpaceClass.* ~> JMXParsers.Invocation(svr, Some(query))).map {
+    (token("invoke ") ~> SpaceClass.* ~> JMXParsers.Invocation(svr, Some(query))).map:
       case opName ~ args => actions.InvokeOperation(query, opName, args)
-    }
 
   private lazy val Disconnect: Parser[Action] =
     token("disconnect") ^^^ actions.Disconnect
-}

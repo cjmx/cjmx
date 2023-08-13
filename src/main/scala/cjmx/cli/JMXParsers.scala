@@ -32,41 +32,41 @@ package cjmx
 package cli
 
 import scala.collection.immutable.Seq
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
-import java.util.{Map => JMap}
+import java.util.Map as JMap
 
 import sbt.internal.util.complete.Parser
-import sbt.internal.util.complete.DefaultParsers._
+import sbt.internal.util.complete.DefaultParsers.*
 
-import javax.management.{JMX => _, _}
+import javax.management.{JMX as _, *}
 
-import MoreParsers._
+import MoreParsers.*
 
 import cjmx.ext.AttributePathValueExp
 import cjmx.util.Math.liftToBigDecimal
-import cjmx.util.jmx._
+import cjmx.util.jmx.*
 
-object JMXParsers {
-  import Parser._
+object JMXParsers:
+  import Parser.*
 
   def QuotedObjectNameParser(svr: MBeanServerConnection): Parser[ObjectName] =
     token('\'') ~> ObjectNameParser(svr) <~ token('\'')
 
   def ObjectNameParser(svr: MBeanServerConnection): Parser[ObjectName] =
-    for {
+    for
       domain <- token(ObjectNameDomainParser(svr).? <~ ':').map(_.getOrElse(""))
       builder <- ObjectNameProductions.Properties(svr, ObjectNameBuilder(domain))
       oname <- builder.oname.fold(
         e => Parser.failure("invalid object name: " + e),
         n => Parser.success(n)
       )
-    } yield oname
+    yield oname
 
   def ObjectNameDomainParser(svr: MBeanServerConnection): Parser[String] =
-    charClass(_ != ':', "object name domain").+.string.examples(svr.getDomains: _*)
+    charClass(_ != ':', "object name domain").+.string.examples(svr.getDomains*)
 
-  private object ObjectNameProductions {
+  private object ObjectNameProductions:
 
     def Properties(
         svr: MBeanServerConnection,
@@ -82,47 +82,43 @@ object JMXParsers {
         svr: MBeanServerConnection,
         soFar: ObjectNameBuilder
     ): Parser[ObjectNameBuilder] =
-      for {
+      for
         key <- token(PropertyKey(svr, soFar) <~ '=')
         value <- token("*" | PropertyValue(svr, soFar, key))
-      } yield soFar.addProperty(key, value)
+      yield soFar.addProperty(key, value)
 
     def PropertyKey(svr: MBeanServerConnection, soFar: ObjectNameBuilder): Parser[String] =
       PropertyPart(valuePart = false)
         .flatMap { key =>
-          if (soFar.properties contains key)
-            Parser.failure("duplicate key " + key)
-          else
-            success(key)
+          if soFar.properties contains key then Parser.failure("duplicate key " + key)
+          else success(key)
         }
-        .examples {
-          val keys = for {
+        .examples:
+          val keys = for
             nameSoFar <- soFar.addPropertyWildcardChar.oname.toOption.toSet: Set[ObjectName]
-            name <- safely(Set.empty[ObjectName])(svr.toScala.queryNames(Some(nameSoFar), None))
+            name <- safely(Set.empty[ObjectName])(svr.queryNames(Some(nameSoFar), None))
             (key, value) <- (name.getKeyPropertyList: JMap[String, String]).asScala
             if !soFar.properties.contains(key)
-          } yield key
+          yield key
           keys.toSet + "<key>"
-        }
 
     def PropertyValue(
         svr: MBeanServerConnection,
         soFar: ObjectNameBuilder,
         key: String
     ): Parser[String] =
-      PropertyPart(valuePart = true).examples {
-        val values = for {
+      PropertyPart(valuePart = true).examples:
+        val values = for
           nameSoFar <- soFar
             .addProperty(key, "*")
             .addPropertyWildcardChar
             .oname
             .toOption
             .toSet: Set[ObjectName]
-          name <- safely(Set.empty[ObjectName])(svr.toScala.queryNames(Some(nameSoFar), None))
+          name <- safely(Set.empty[ObjectName])(svr.queryNames(Some(nameSoFar), None))
           value <- (name.getKeyPropertyList: JMap[String, String]).asScala.get(key)
-        } yield value
+        yield value
         values.toSet + "<value>"
-      }
 
     def PropertyPart(valuePart: Boolean): Parser[String] =
       PropertyPartNonQuoted(valuePart) | PropertyPartQuoted(valuePart)
@@ -130,24 +126,18 @@ object JMXParsers {
     def PropertyPartNonQuoted(valuePart: Boolean): Parser[String] =
       repFlatMap(None: Option[Char]) { lastChar =>
         val p =
-          if (lastChar == Some('\\'))
-            WildcardChar
-          else if (valuePart)
-            PropertyChar | WildcardChar
-          else
-            PropertyChar
+          if lastChar == Some('\\') then WildcardChar
+          else if valuePart then PropertyChar | WildcardChar
+          else PropertyChar
         p.map(d => (Some(d), d))
       }.string
 
     def PropertyPartQuoted(valuePart: Boolean): Parser[String] =
       (DQuoteChar ~> (repFlatMap(None: Option[Char]) { lastChar =>
         val p =
-          if (lastChar == Some('\\'))
-            WildcardChar | DQuoteChar
-          else if (valuePart)
-            QuotedValueChar
-          else
-            PropertyChar
+          if lastChar == Some('\\') then WildcardChar | DQuoteChar
+          else if valuePart then QuotedValueChar
+          else PropertyChar
         p.map(d => (Some(d), d))
       }.string) <~ DQuoteChar).map(s => """"%s"""".format(s))
 
@@ -157,13 +147,12 @@ object JMXParsers {
     lazy val QuotedValueChar = charClass(_ != '\"')
     lazy val PropertyReservedChars = PropertyReservedCharsNoDQuote + '\"'
     lazy val PropertyReservedCharsNoDQuote = Set(':', ',', '=', '*', '?')
-  }
 
   private case class ObjectNameBuilder(
       domain: String,
       properties: Map[String, String] = Map.empty,
       wildcardProperty: Boolean = false
-  ) {
+  ):
     def addProperty(key: String, value: String) = copy(properties = properties + (key -> value))
     def addProperties(props: Map[String, String]) = copy(properties = properties ++ props)
     def addPropertyWildcardChar = copy(wildcardProperty = true)
@@ -171,27 +160,22 @@ object JMXParsers {
     override def toString = domain + ":" + (
       properties.map { case (k, v) =>
         k + "=" + v
-      } ++ (if (wildcardProperty) Seq("*") else Seq.empty)
+      } ++ (if wildcardProperty then Seq("*") else Seq.empty)
     ).mkString(",")
 
     def oname: Either[MalformedObjectNameException, ObjectName] =
       try Right(new ObjectName(toString))
-      catch {
-        case e: MalformedObjectNameException => Left(e)
-      }
-  }
+      catch case e: MalformedObjectNameException => Left(e)
 
-  def QueryExpParser(svr: MBeanServerConnection, name: ObjectName): Parser[QueryExp] = {
-    val attributeNames = safely(Set.empty[String]) {
-      svr.toScala.queryNames(Some(name), None).flatMap { n =>
+  def QueryExpParser(svr: MBeanServerConnection, name: ObjectName): Parser[QueryExp] =
+    val attributeNames = safely(Set.empty[String]):
+      svr.queryNames(Some(name), None).flatMap { n =>
         svr.getMBeanInfo(n).getAttributes.map(_.getName).toSet
       }
-    }
     new QueryExpProductions(attributeNames).Query
-  }
 
-  private class QueryExpProductions(attributeNames: Set[String]) {
-    import javax.management.{Query => Q}
+  private class QueryExpProductions(attributeNames: Set[String]):
+    import javax.management.Query as Q
 
     lazy val Query: Parser[QueryExp] =
       (AndQuery ~
@@ -219,20 +203,18 @@ object JMXParsers {
         .map(Q.isInstanceOf)
 
     lazy val ValuePredicate =
-      token(Value).flatMap { lhs =>
+      token(Value).flatMap: lhs =>
         ws.* ~> {
           val dependentOnOnlyValueExp =
             RelationalOperation(lhs) | (ws.+ ~> (Negatable(Between(lhs)) | Negatable(In(lhs))))
-          lhs match {
+          lhs match
             case av: AttributeValueExp =>
               dependentOnOnlyValueExp | (ws.+ ~> (Negatable(Match(av)) | Negatable(SubString(av))))
             case _ =>
               dependentOnOnlyValueExp
-          }
         }
-      }
 
-    def RelationalOperation(lhs: ValueExp) = {
+    def RelationalOperation(lhs: ValueExp) =
       def binaryOp(op: String, f: (ValueExp, ValueExp) => QueryExp): Parser[QueryExp] =
         (token(op) ~> ws.* ~> Value).map(rhs => f(lhs, rhs))
       binaryOp("=", Q.eq) |
@@ -241,48 +223,46 @@ object JMXParsers {
         binaryOp("<=", Q.leq) |
         binaryOp(">=", Q.geq) |
         binaryOp("!=", (lhs, rhs) => Q.not(Q.eq(lhs, rhs)))
-    }
 
     def Negatable(p: Parser[QueryExp]): Parser[QueryExp] =
-      (Not.? ~ p).map {
+      (Not.? ~ p).map:
         case Some(true) ~ q => Q.not(q)
         case _ ~ q          => q
-      }
 
-    def Between(lhs: ValueExp) = for {
+    def Between(lhs: ValueExp) = for
       _ <- token("between ") <~ ws.*
       low <- Value <~ ws.* <~ token("and ") <~ ws.*
       hi <- Value
-    } yield Q.between(lhs, low, hi)
+    yield Q.between(lhs, low, hi)
 
-    def In(lhs: ValueExp) = for {
+    def In(lhs: ValueExp) = for
       _ <- token("in ") <~ ws.* <~ token("(")
       values <- repsep(Value, ws.* ~ ',' ~ ws.*)
       _ <- ws.* ~ token(")")
-    } yield Q.in(lhs, values.toArray)
+    yield Q.in(lhs, values.toArray)
 
-    def Match(lhs: AttributeValueExp) = for {
+    def Match(lhs: AttributeValueExp) = for
       _ <- token("like ") <~ ws.*
       pat <- StringLiteral
-    } yield Q.`match`(lhs, pat)
+    yield Q.`match`(lhs, pat)
 
     def SubString(lhs: AttributeValueExp) =
       InitialSubString(lhs) | FinalSubString(lhs) | AnySubString(lhs)
 
-    def InitialSubString(lhs: AttributeValueExp) = for {
+    def InitialSubString(lhs: AttributeValueExp) = for
       _ <- token("startsWith ") <~ ws.*
       ss <- StringLiteral
-    } yield Q.initialSubString(lhs, ss)
+    yield Q.initialSubString(lhs, ss)
 
-    def FinalSubString(lhs: AttributeValueExp) = for {
+    def FinalSubString(lhs: AttributeValueExp) = for
       _ <- token("endsWith ") <~ ws.*
       ss <- StringLiteral
-    } yield Q.finalSubString(lhs, ss)
+    yield Q.finalSubString(lhs, ss)
 
-    def AnySubString(lhs: AttributeValueExp) = for {
+    def AnySubString(lhs: AttributeValueExp) = for
       _ <- token("contains ") <~ ws.*
       ss <- StringLiteral
-    } yield Q.anySubString(lhs, ss)
+    yield Q.anySubString(lhs, ss)
 
     lazy val Value: Parser[ValueExp] = new ExpressionParser {
       override type Expression = ValueExp
@@ -296,9 +276,8 @@ object JMXParsers {
     lazy val Attribute =
       (NonQualifiedAttribute | QualifiedAttribute | AttributePath).examples("<attribute>")
     lazy val NonQualifiedAttribute = Identifier(DQuoteChar).map(Q.attr)
-    lazy val QualifiedAttribute = ((rep1sep(JavaIdentifier, '.') <~ '#') ~ JavaIdentifier).map {
+    lazy val QualifiedAttribute = ((rep1sep(JavaIdentifier, '.') <~ '#') ~ JavaIdentifier).map:
       case clsParts ~ attr => Q.attr(clsParts.mkString("."), attr)
-    }
     lazy val AttributePath = rep1sep(Identifier(DQuoteChar), '.').map { parts =>
       new AttributePathValueExp(parts.head, new java.util.ArrayList(parts.tail.asJava))
     }
@@ -308,23 +287,21 @@ object JMXParsers {
     lazy val LongLiteral = LongValue.map(Q.value)
     lazy val DoubleLiteral = DoubleValue.map(Q.value)
     lazy val StringLiteral = StringValue.map(Q.value)
-  }
 
   def Projection(
       svr: MBeanServerConnection,
       query: Option[MBeanQuery]
-  ): Parser[Seq[Attribute] => Seq[Attribute]] = {
+  ): Parser[Seq[Attribute] => Seq[Attribute]] =
     val getAttributeNames = svr.getMBeanInfo(_: ObjectName).getAttributes.map(_.getName).toSet
     val attributeNames = query.fold(Set.empty[String])(q =>
-      safely(Set.empty[String])(svr.toScala.queryNames(q).flatMap(getAttributeNames))
+      safely(Set.empty[String])(svr.queryNames(q).flatMap(getAttributeNames))
     )
     new ProjectionProductions(attributeNames).Projection
-  }
 
-  private class ProjectionProductions(attributeNames: Set[String]) {
+  private class ProjectionProductions(attributeNames: Set[String]):
 
     lazy val Projection =
-      (token("*") ^^^ (identity[Seq[Attribute]] _)) |
+      (token("*") ^^^ identity[Seq[Attribute]]) |
         (rep1sep(Attribute, ws.* ~ ',' ~ ws.*).map { attrMappings => (attrs: Seq[Attribute]) =>
           {
             val attrsAsMap = attrs.map(attr => attr.getName -> attr.getValue).toMap
@@ -336,10 +313,9 @@ object JMXParsers {
         })
 
     lazy val Attribute: Parser[Map[String, AnyRef] => Option[(String, AnyRef)]] =
-      (token(UnnamedAttribute) ~ (token(" as ") ~> Identifier(SQuoteChar, DQuoteChar)).?).map {
+      (token(UnnamedAttribute) ~ (token(" as ") ~> Identifier(SQuoteChar, DQuoteChar)).?).map:
         case f ~ Some(t) => attrs => f(attrs).map { case (_, v) => (t, v) }
         case f ~ None    => f
-      }
 
     lazy val UnnamedAttribute: Parser[Map[String, AnyRef] => Option[(String, AnyRef)]] =
       new ExpressionParser {
@@ -358,52 +334,45 @@ object JMXParsers {
           }
         override lazy val Value = SimpleAttribute | SimpleValue
 
-        private sealed trait Op {
+        private sealed trait Op:
           def name: String
           def apply(x: BigDecimal, y: BigDecimal): BigDecimal
-        }
 
-        private object Ops {
-          object Multiplication extends Op {
+        private object Ops:
+          object Multiplication extends Op:
             def name = "*"
             def apply(x: BigDecimal, y: BigDecimal) = x * y
-          }
 
-          object Division extends Op {
+          object Division extends Op:
             def name = "/"
             def apply(x: BigDecimal, y: BigDecimal) = x / y
-          }
 
-          object Addition extends Op {
+          object Addition extends Op:
             def name = "+"
             def apply(x: BigDecimal, y: BigDecimal) = x + y
-          }
 
-          object Subtraction extends Op {
+          object Subtraction extends Op:
             def name = "-"
             def apply(x: BigDecimal, y: BigDecimal) = x - y
-          }
-        }
 
         private def apply(op: Op, attrs: Map[String, AnyRef], lhs: Expression, rhs: Expression) =
-          for {
+          for
             (leftName, leftValue) <- lhs(attrs)
             (rightName, rightValue) <- rhs(attrs)
-            result <- for {
+            result <- for
               l <- liftToBigDecimal(leftValue)
               r <- liftToBigDecimal(rightValue)
-            } yield op(l, r)
-          } yield ("%s %s %s".format(leftName, op.name, rightName), result)
+            yield op(l, r)
+          yield ("%s %s %s".format(leftName, op.name, rightName), result)
       }.Expr.examples(Set("<value>", "<attribute>") ++ attributeNames)
 
     lazy val SimpleAttribute: Parser[Map[String, AnyRef] => Option[(String, AnyRef)]] =
       rep1sep(Identifier(SQuoteChar, DQuoteChar), '.').map { ids => attrs =>
-        for {
+        for
           hv <- attrs.get(ids.head)
           v <- JMX.extractValue(hv, ids.tail)
-        } yield ids.mkString(".") -> v
+        yield ids.mkString(".") -> v
       }
-  }
 
   def Invocation(
       svr: MBeanServerConnection,
@@ -417,17 +386,15 @@ object JMXParsers {
   private def OperationName(
       svr: MBeanServerConnection,
       query: Option[MBeanQuery]
-  ): Parser[String] = {
-    val ops: Set[String] = safely(Set.empty[String]) {
-      for {
+  ): Parser[String] =
+    val ops: Set[String] = safely(Set.empty[String]):
+      for
         q <- query.toSet: Set[MBeanQuery]
         n <- svr.queryNames(q)
         i <- svr.mbeanInfo(n).toSet: Set[MBeanInfo]
         o <- i.getOperations
-      } yield o.getName
-    }
+      yield o.getName
     Identifier(SQuoteChar, DQuoteChar).examples(ops + "<operation name>")
-  }
 
   private def InvocationParameter(svr: MBeanServerConnection): Parser[AnyRef] = {
     (BooleanValue.map(v => java.lang.Boolean.valueOf(v): AnyRef)) |
@@ -446,7 +413,7 @@ object JMXParsers {
     (token("{") ~> repsep(ws.* ~> p, ws.* ~> ',') <~ ws.* <~ token("}")).map(_.toArray)
 
   private def Identifier(quotes: Char*) =
-    (JavaIdentifier | QuotedIdentifier(quotes: _*)).examples("identifier")
+    (JavaIdentifier | QuotedIdentifier(quotes*)).examples("identifier")
 
   private lazy val JavaIdentifier: Parser[String] =
     (charClass(c => c.isLetter || c == '_' | c == '$', "letter, underscore, or dollar sign") ~
@@ -459,10 +426,9 @@ object JMXParsers {
       }
       .examples("identifier")
 
-  private def QuotedIdentifier(quotes: Char*): Parser[String] = {
+  private def QuotedIdentifier(quotes: Char*): Parser[String] =
     def quotedWith(q: Char) = q ~> (charClass(_ != q) | (q ~ q ^^^ q)).* <~ q
     quotes.map(quotedWith).reduceLeft(_ | _).string.examples("\"identifier\"")
-  }
 
   private lazy val SQuoteChar = '\''
 
@@ -484,12 +450,12 @@ object JMXParsers {
   private lazy val StringValue =
     ('\'' ~> (charClass(_ != '\'') | ('\\' ~> '\'')).*.string <~ '\'').examples("'<string>'")
 
-  private def Parenthesized[A](p: => Parser[A]) = for {
+  private def Parenthesized[A](p: => Parser[A]) = for
     _ <- token("(") <~ ws.*
     pp <- p <~ ws.* <~ token(")")
-  } yield pp
+  yield pp
 
-  private[cli] trait ExpressionParser {
+  private[cli] trait ExpressionParser:
     type Expression
     def multiply(lhs: Expression, rhs: Expression): Expression
     def divide(lhs: Expression, rhs: Expression): Expression
@@ -512,9 +478,7 @@ object JMXParsers {
         ) <~ ws.*).*).map { case first ~ sq => sq.foldLeft(first)((acc, f) => f(acc)) }
 
     lazy val Factor: Parser[Expression] = Value | Parenthesized(Expr).examples("(<value>)")
-  }
 
   private def safely[A](onError: => A)(f: => A): A =
     try f
     catch { case e: Exception => onError }
-}

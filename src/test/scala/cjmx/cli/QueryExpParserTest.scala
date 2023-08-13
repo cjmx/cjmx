@@ -31,14 +31,14 @@
 package cjmx.cli
 
 import java.lang.management.ManagementFactory
-import javax.management._
+import javax.management.*
 
 import sbt.internal.util.complete.Parser
 
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 
-class QueryExpParserTest extends AnyFunSuite with Matchers {
+class QueryExpParserTest extends AnyFunSuite with Matchers:
 
   val validExamples = Seq(
     "Verbose = true" ->
@@ -210,9 +210,8 @@ class QueryExpParserTest extends AnyFunSuite with Matchers {
   )
 
   validExamples.foreach { case (ex, query) =>
-    test("valid - " + ex) {
+    test("valid - " + ex):
       parse(ex).map(_.toString) should be(Right(query.toString))
-    }
   }
 
   private def parse(str: String): Either[String, QueryExp] =
@@ -223,4 +222,3 @@ class QueryExpParserTest extends AnyFunSuite with Matchers {
         new ObjectName("java.lang:*")
       )
     )
-}

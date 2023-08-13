@@ -31,53 +31,48 @@
 package cjmx.util.jmx
 
 import scala.annotation.tailrec
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
-import javax.management._
-import javax.management.openmbean._
+import javax.management.*
+import javax.management.openmbean.*
 
 /** Provides utilities for working with JMX. */
-object JMX {
+object JMX:
 
-  case class VMID(value: String) {
+  case class VMID(value: String):
     override def toString = value
-  }
 
-  case class JType(value: String) {
+  case class JType(value: String):
     override def toString =
       try Class.forName(value).getSimpleName
-      catch {
-        case cnfe: ClassNotFoundException => value
-      }
-  }
+      catch case cnfe: ClassNotFoundException => value
 
-  case class JValue(value: AnyRef) {
-    override def toString: String = value match {
+  case class JValue(value: AnyRef):
+    override def toString: String = value match
       case composite: CompositeData =>
         val keys = composite.getCompositeType.keySet.asScala.toSeq.sorted
         val keysAndValues = keys.zip(composite.getAll(keys.toArray).toSeq)
-        indentLines(2) {
+        indentLines(2):
           keysAndValues
             .map { case (k, v) => "%s: %s".format(k, JValue(v)) }
             .mkString(newline, newline, "")
-        }
-      case arr: Array[?]  => arr.map { case v: AnyRef => JValue(v) }.mkString("[", ", ", "]")
+      case arr: Array[? <: AnyRef] =>
+        arr.map { case v: AnyRef => JValue(v) }.mkString("[", ", ", "]")
       case n if n eq null => "null"
       case tds: TabularDataSupport =>
         val tabularType = tds.getTabularType
         val compositeType = tabularType.getRowType
         val keys = compositeType.keySet.asScala.toSet
 
-        val lines = tds.getTabularType.getIndexNames.asScala.toList match {
+        val lines = tds.getTabularType.getIndexNames.asScala.toList match
           // Optimize tables with single key
           case uniqueKey :: Nil =>
             val humanizedMap = tds.values.asScala.toList.collect { case value: CompositeData =>
               val strKey = JKey(value.get(uniqueKey)).toString
               val rest = (keys - uniqueKey).toList
-              rest match {
+              rest match
                 case singleKey :: Nil => strKey -> value.get(singleKey)
                 case _                => strKey -> value.getAll(rest.toArray)
-              }
             }
             humanizedMap.sortBy(_._1).map { case (key, value: AnyRef) =>
               s"${key}: ${JValue(value)}"
@@ -87,40 +82,30 @@ object JMX {
             tds.asScala.toList.map { case (_, value) =>
               JValue(value).toString
             }
-        }
         indentLines(2)(newline + lines.mkString(newline))
 
       case other => other.toString
 
-    }
-  }
-
-  case class JKey(value: AnyRef) {
-    override def toString = value match {
+  case class JKey(value: AnyRef):
+    override def toString = value match
       case compositeKey: CompositeData =>
         val keys = compositeKey.getCompositeType.keySet.asScala.toSeq.sorted
         val keysAndValues = keys.map(k => s"$k: ${compositeKey.get(k)}")
         val typeName = compositeKey.getCompositeType.getTypeName
 
-        if (typeName.endsWith("MXBean")) {
+        if typeName.endsWith("MXBean") then
           val shortName = typeName.split("\\.").last.replace("MXBean", "")
           s"$shortName(${keysAndValues.mkString(", ")})"
-
-        } else {
-          s"$typeName(${keysAndValues.mkString(", ")})"
-        }
+        else s"$typeName(${keysAndValues.mkString(", ")})"
 
       case other => other.toString
-    }
-  }
 
-  case class JAttribute(a: Attribute) {
+  case class JAttribute(a: Attribute):
     override def toString =
       "%s: %s".format(a.getName, JValue(a.getValue))
-  }
 
   def typeToClass(cl: ClassLoader)(t: String): Option[Class[?]] =
-    t match {
+    t match
       case "boolean" => Some(classOf[java.lang.Boolean])
       case "byte"    => Some(classOf[java.lang.Byte])
       case "char"    => Some(classOf[java.lang.Character])
@@ -131,26 +116,19 @@ object JMX {
       case "double"  => Some(classOf[java.lang.Double])
       case other =>
         try Some(Class.forName(t, true, cl))
-        catch {
-          case e: ClassNotFoundException => None
-        }
-    }
+        catch case e: ClassNotFoundException => None
 
   @tailrec final def extractValue(value: AnyRef, names: Seq[String]): Option[AnyRef] =
-    if (names.isEmpty)
-      Some(value)
+    if names.isEmpty then Some(value)
     else
-      value match {
+      value match
         case cd: CompositeData =>
           val nextName = names.head
-          Option(cd.get(nextName)) match {
+          Option(cd.get(nextName)) match
             case Some(nv) => extractValue(nv, names.tail)
             case None     => None
-          }
         case _ => None
-      }
 
   private val newline = "%n".format()
   private def indentLines(indent: Int)(s: String): String =
     s.split(newline).map(s => (" " * indent) + s).mkString(newline)
-}

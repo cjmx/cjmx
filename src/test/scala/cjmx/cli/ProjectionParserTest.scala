@@ -30,10 +30,10 @@
 
 package cjmx.cli
 
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 import java.lang.management.ManagementFactory
-import javax.management._
+import javax.management.*
 import javax.management.openmbean.{
   CompositeData,
   CompositeDataSupport,
@@ -49,10 +49,10 @@ import org.scalatest.matchers.should.Matchers
 
 import scala.collection.immutable.Seq
 
-import cjmx.util.jmx._
+import cjmx.util.jmx.*
 import cjmx.util.jmx.JMX.JAttribute
 
-class ProjectionParserTest extends AnyFunSuite with Matchers {
+class ProjectionParserTest extends AnyFunSuite with Matchers:
 
   // Assumes HeapMemoryUsage.{init = 0, committed=1000000000, used=500000000, max=2000000000}
   val validExamplesBasedOnMemoryMXBean = Seq(
@@ -82,7 +82,7 @@ class ProjectionParserTest extends AnyFunSuite with Matchers {
   )
 
   validExamplesBasedOnMemoryMXBean.foreach { case (ex, expectedOutput) =>
-    test("valid - " + ex) {
+    test("valid - " + ex):
       val attrs =
         Seq(heapMemoryUsage(init = 0, committed = 1000000000, used = 500000000, max = 2000000000))
       val result = parse(ex)
@@ -91,7 +91,6 @@ class ProjectionParserTest extends AnyFunSuite with Matchers {
         JAttribute(attr).toString.split("%n".format()).map(_.trim)
       }
       projectedAsStrings should be(expectedOutput)
-    }
   }
 
   private def parse(str: String): Either[String, Seq[Attribute] => Seq[Attribute]] =
@@ -122,4 +121,3 @@ class ProjectionParserTest extends AnyFunSuite with Matchers {
         "max" -> 2000000000L
       ).asJava
     )
-}

@@ -38,9 +38,9 @@ import sbt.internal.util.complete.Parser
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 
-import JMXParsers._
+import JMXParsers.*
 
-class ObjectNameParserTest extends AnyFunSuite with Matchers {
+class ObjectNameParserTest extends AnyFunSuite with Matchers:
 
   val validExamples = Seq(
     // Basic examples
@@ -78,9 +78,8 @@ class ObjectNameParserTest extends AnyFunSuite with Matchers {
   )
 
   validExamples.foreach { ex =>
-    test("valid - " + ex) {
+    test("valid - " + ex):
       parse(ex) should be(Right(new ObjectName(ex)))
-    }
   }
 
   val invalidExamples = Seq(
@@ -90,11 +89,10 @@ class ObjectNameParserTest extends AnyFunSuite with Matchers {
   )
 
   invalidExamples.foreach { ex =>
-    test("invalid - " + ex) {
+    test("invalid - " + ex):
       // sanity check example is invalid
       a[MalformedObjectNameException] should be thrownBy new ObjectName(ex)
       assert(parse(ex).isLeft)
-    }
   }
 
   def parse(str: String): Either[String, ObjectName] =
@@ -124,9 +122,8 @@ class ObjectNameParserTest extends AnyFunSuite with Matchers {
   )
 
   completionExamples.foreach { case (str, expected) =>
-    test("completion - " + str) {
+    test("completion - " + str):
       completions(str) should be(expected)
-    }
   }
 
   def completions(str: String): Set[String] =
@@ -134,4 +131,3 @@ class ObjectNameParserTest extends AnyFunSuite with Matchers {
       .completions(ObjectNameParser(ManagementFactory.getPlatformMBeanServer), str, Int.MaxValue)
       .get
       .map(_.display)
-}
