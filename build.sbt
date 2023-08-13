@@ -32,7 +32,7 @@ libraryDependencies ++=
     "org.scalatest" %% "scalatest" % "3.2.16" % "test" ::
     Nil
 
-Proguard / proguardVersion := "5.2.1"
+Proguard / proguardVersion := "7.4.0-beta01"
 Proguard / proguardOptions ++= Seq(
   ProguardOptions.keepMain("cjmx.Main"),
   "-dontobfuscate",
@@ -43,9 +43,8 @@ Proguard / proguardOptions ++= Seq(
 )
 Proguard / proguardInputFilter := { file =>
   file.name match {
-    case f if f.startsWith("jansi-") => Some("!**")
-    case "tools.jar"                 => Some("!META-INF/**")
-    case _                           => Some("!META-INF/MANIFEST.MF")
+    case "tools.jar" => Some("!META-INF/**")
+    case _           => Some("!META-INF/MANIFEST.MF")
   }
 }
 

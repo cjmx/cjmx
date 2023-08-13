@@ -6,23 +6,23 @@ cjmx is a command line JMX client intended to be used when graphical tools (e.g.
 Getting cjmx
 ============
 
-cjmx is available on Maven Central using groupId `com.github.cjmx` and artifactId `cjmx_2.12`.  An executable JAR is published using the `app` classifier.
+cjmx is available on Maven Central using groupId `com.github.cjmx` and artifactId `cjmx_3`.  An executable JAR is published using the `app` classifier.
 
  - cjmx artifacts on Maven Central: https://search.maven.org/search?q=g:com.github.cjmx
- - Executable JAR using Scala 2.12: https://search.maven.org/remotecontent?filepath=com/github/cjmx/cjmx_2.12/2.8.1/cjmx_2.12-2.8.1-app.jar
+ - Executable JAR using Scala 3: https://search.maven.org/remotecontent?filepath=com/github/cjmx/cjmx_3/3.0.0/cjmx_3-3.0.0-app.jar
 
 Note: Both a regular and an application JAR (with embedded dependencies and minimized) are published on Maven Central.
 
 Building
 ========
-To build, run `sbt publish-local`.  This will build `target/scala-2.12/proguard/cjmx_2.12-2.8.1-SNAPSHOT.jar` and install a copy to your local ivy cache. Note this requires [sbt](https://www.scala-sbt.org) to be installed first.
+To build, run `sbt publishLocal`.  This will build `target/scala-3.3.0/proguard/cjmx_3-3.3.0-SNAPSHOT.jar` and install a copy to your local ivy cache. Note this requires [sbt](https://www.scala-sbt.org) to be installed first.
 
 Usage
 =====
 
 Launching cjmx is done via, using Java 9+:
 
-    java -cp target/scala-2.12/proguard/cjmx_2.12-2.8.1-SNAPSHOT.jar cjmx.Main [PID]
+    java -cp target/scala-3.3.0/proguard/cjmx_*.jar cjmx.Main [PID]
 
 If a PID is specified on the command line, cjmx will attempt to connect to the local JVM with that PID; otherwise, cjmx starts in a disconnected state.
 
