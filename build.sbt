@@ -21,7 +21,7 @@ ThisBuild / scalacOptions ++= Seq(
   "-target:jvm-1.8"
 )
 
-ThisBuild / licenses += ("Three-clause BSD-style", url("https://github.com/cjmx/cjmx/blob/master/LICENSE"))
+ThisBuild / licenses += ("BSD-3-Clause", url("https://github.com/cjmx/cjmx/blob/master/LICENSE"))
 
 name := "cjmx"
 
