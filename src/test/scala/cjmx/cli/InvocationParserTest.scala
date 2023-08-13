@@ -34,9 +34,10 @@ import java.lang.management.ManagementFactory
 
 import sbt.internal.util.complete.Parser
 
-import org.scalatest._
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class InvocationParserTest extends FunSuite with Matchers {
+class InvocationParserTest extends AnyFunSuite with Matchers {
 
   val validExamples: Seq[(String, (String, Seq[Any]))] = Seq(
     "gc()" -> ("gc" -> Seq.empty[AnyRef]),

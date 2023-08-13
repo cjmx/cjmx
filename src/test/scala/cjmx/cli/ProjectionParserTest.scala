@@ -44,14 +44,15 @@ import javax.management.openmbean.{
 
 import sbt.internal.util.complete.Parser
 
-import org.scalatest._
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
 import scala.collection.immutable.Seq
 
 import cjmx.util.jmx._
 import cjmx.util.jmx.JMX.JAttribute
 
-class ProjectionParserTest extends FunSuite with Matchers {
+class ProjectionParserTest extends AnyFunSuite with Matchers {
 
   // Assumes HeapMemoryUsage.{init = 0, committed=1000000000, used=500000000, max=2000000000}
   val validExamplesBasedOnMemoryMXBean = Seq(

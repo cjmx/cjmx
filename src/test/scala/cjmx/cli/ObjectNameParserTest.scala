@@ -35,11 +35,12 @@ import javax.management.{MalformedObjectNameException, ObjectName}
 
 import sbt.internal.util.complete.Parser
 
-import org.scalatest._
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
 import JMXParsers._
 
-class ObjectNameParserTest extends FunSuite with Matchers {
+class ObjectNameParserTest extends AnyFunSuite with Matchers {
 
   val validExamples = Seq(
     // Basic examples

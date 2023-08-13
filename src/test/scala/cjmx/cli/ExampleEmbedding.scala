@@ -30,12 +30,13 @@
 
 package cjmx.cli
 
-import org.scalatest._
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
 import sbt.internal.util.complete.Parser
 import cjmx.util.jmx.JMXConnection
 
-class ExampleEmbedding extends FunSuite with Matchers {
+class ExampleEmbedding extends AnyFunSuite with Matchers {
 
   test("Example of running mbean actions against current jvm") {
     val result =

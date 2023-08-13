@@ -37,7 +37,7 @@ libraryDependencies ++=
   "com.github.cjmx" % "cjmx-ext" % "1.0.0.RELEASE" ::
     "org.scala-sbt" %% "completion" % "1.0.4" ::
     "com.google.code.gson" % "gson" % "2.2.2" ::
-    "org.scalatest" %% "scalatest" % "3.0.0" % "test" ::
+    "org.scalatest" %% "scalatest" % "3.2.16" % "test" ::
     Nil
 
 Proguard / proguardVersion := "5.2.1"

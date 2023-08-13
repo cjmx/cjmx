@@ -35,9 +35,10 @@ import javax.management._
 
 import sbt.internal.util.complete.Parser
 
-import org.scalatest._
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class QueryExpParserTest extends FunSuite with Matchers {
+class QueryExpParserTest extends AnyFunSuite with Matchers {
 
   val validExamples = Seq(
     "Verbose = true" ->

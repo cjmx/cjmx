@@ -34,9 +34,10 @@ import sbt.internal.util.complete.Parser
 import sbt.internal.util.complete.Parser.richParser
 import sbt.internal.util.complete.Parsers.Digit
 
-import org.scalatest._
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class ExpressionParserTest extends FunSuite with Matchers {
+class ExpressionParserTest extends AnyFunSuite with Matchers {
 
   val validExamples = Seq(
     "1 + 2" -> "(+ 1 2)",
