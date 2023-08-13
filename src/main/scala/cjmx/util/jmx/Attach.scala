@@ -30,7 +30,7 @@
 
 package cjmx.util.jmx
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.util.control.NonFatal
 
 import java.util.Hashtable
@@ -64,12 +64,13 @@ object Attach {
     vmd <- localVMs
       .find(_.id == vmid)
       .toRight("No virtual machine with VM ID %s".format(vmid))
-      .right
-    vm <- (try Right(VirtualMachine.attach(vmd))
-    catch { case NonFatal(t) => Left(Option(t.getMessage).getOrElse("")) }).right
-    addr <- localConnectorAddress(vm).right
-    cnx <- (try Right(JMXConnectorFactory.connect(new JMXServiceURL(addr)))
-    catch { case NonFatal(t) => Left(Option(t.getMessage).getOrElse("")) }).right
+    vm <-
+      try Right(VirtualMachine.attach(vmd))
+      catch { case NonFatal(t) => Left(Option(t.getMessage).getOrElse("")) }
+    addr <- localConnectorAddress(vm)
+    cnx <-
+      try Right(JMXConnectorFactory.connect(new JMXServiceURL(addr)))
+      catch { case NonFatal(t) => Left(Option(t.getMessage).getOrElse("")) }
   } yield cnx
 
   def localConnectorAddress(vm: VirtualMachine): Either[String, String] = {

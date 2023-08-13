@@ -93,7 +93,7 @@ class ObjectNameParserTest extends AnyFunSuite with Matchers {
     test("invalid - " + ex) {
       // sanity check example is invalid
       a[MalformedObjectNameException] should be thrownBy new ObjectName(ex)
-      parse(ex) should be('left)
+      assert(parse(ex).isLeft)
     }
   }
 

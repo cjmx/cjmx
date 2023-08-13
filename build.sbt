@@ -9,18 +9,7 @@ ThisBuild / tlSonatypeUseLegacyHost := true
 ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("17"))
 
 ThisBuild / scalaVersion := crossScalaVersions.value.last
-ThisBuild / crossScalaVersions := Seq("2.12.10")
-ThisBuild / scalacOptions ++= Seq(
-  "-feature",
-  "-deprecation",
-  "-unchecked",
-  "-Xcheckinit",
-  "-Xlint",
-  "-Xverify",
-  "-Yno-adapted-args",
-  "-Ywarn-unused-import",
-  "-target:jvm-1.8"
-)
+ThisBuild / crossScalaVersions := Seq("3.3.0")
 
 ThisBuild / licenses := List(
   ("BSD-3-Clause", url("https://github.com/cjmx/cjmx/blob/main/LICENSE"))
@@ -35,7 +24,7 @@ Compile / unmanagedResources ++= {
 
 libraryDependencies ++=
   "com.github.cjmx" % "cjmx-ext" % "1.0.0.RELEASE" ::
-    "org.scala-sbt" %% "completion" % "1.0.4" ::
+    "org.scala-sbt" %% "completion" % "2.0.0-alpha7" ::
     "com.google.code.gson" % "gson" % "2.2.2" ::
     "org.scalatest" %% "scalatest" % "3.2.16" % "test" ::
     Nil

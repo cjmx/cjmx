@@ -31,7 +31,7 @@
 package cjmx.cli
 
 import scala.collection.immutable.Seq
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.collection.mutable.LinkedHashMap
 
 import java.lang.reflect.Type
@@ -73,7 +73,7 @@ object JsonMessageFormatter {
       ) = {
         val tabularType = src.getTabularType
         val compositeType = tabularType.getRowType
-        val keys = compositeType.keySet.asScala
+        val keys = compositeType.keySet.asScala.toSet
 
         src.getTabularType.getIndexNames.asScala.toList match {
           // Optimize JSON for tables with single key

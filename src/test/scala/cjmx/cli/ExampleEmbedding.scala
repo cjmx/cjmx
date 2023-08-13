@@ -47,7 +47,7 @@ class ExampleEmbedding extends AnyFunSuite with Matchers {
   def runMBeanAction(str: String): Either[String, Vector[String]] = {
     val cnx = JMXConnection.PlatformMBeanServerConnection
     for {
-      action <- Parser.parse(str, Parsers.MBeanAction(cnx.mbeanServer)).right
+      action <- Parser.parse(str, Parsers.MBeanAction(cnx.mbeanServer))
       msgs <- {
         val initialCtx = ActionContext.embedded(connectionState = ConnectionState.Connected(cnx))
         val ActionResult(ctx, msgs) = action(initialCtx)
@@ -55,7 +55,7 @@ class ExampleEmbedding extends AnyFunSuite with Matchers {
           Left("Action failed with status code: " + ctx.lastStatusCode)
         else
           Right(msgs)
-      }.right
+      }
     } yield msgs.toVector
   }
 }

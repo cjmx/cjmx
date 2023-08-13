@@ -31,7 +31,7 @@
 package cjmx.util.jmx
 
 import scala.annotation.tailrec
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 import javax.management._
 import javax.management.openmbean._
@@ -52,7 +52,7 @@ object JMX {
   }
 
   case class JValue(value: AnyRef) {
-    override def toString = value match {
+    override def toString: String = value match {
       case composite: CompositeData =>
         val keys = composite.getCompositeType.keySet.asScala.toSeq.sorted
         val keysAndValues = keys.zip(composite.getAll(keys.toArray).toSeq)
@@ -61,12 +61,12 @@ object JMX {
             .map { case (k, v) => "%s: %s".format(k, JValue(v)) }
             .mkString(newline, newline, "")
         }
-      case arr: Array[_]  => arr.map { case v: AnyRef => JValue(v) }.mkString("[", ", ", "]")
+      case arr: Array[?]  => arr.map { case v: AnyRef => JValue(v) }.mkString("[", ", ", "]")
       case n if n eq null => "null"
       case tds: TabularDataSupport =>
         val tabularType = tds.getTabularType
         val compositeType = tabularType.getRowType
-        val keys = compositeType.keySet.asScala
+        val keys = compositeType.keySet.asScala.toSet
 
         val lines = tds.getTabularType.getIndexNames.asScala.toList match {
           // Optimize tables with single key
@@ -119,7 +119,7 @@ object JMX {
       "%s: %s".format(a.getName, JValue(a.getValue))
   }
 
-  def typeToClass(cl: ClassLoader)(t: String): Option[Class[_]] =
+  def typeToClass(cl: ClassLoader)(t: String): Option[Class[?]] =
     t match {
       case "boolean" => Some(classOf[java.lang.Boolean])
       case "byte"    => Some(classOf[java.lang.Byte])

@@ -41,10 +41,10 @@ object InvocationResult {
   final case class Failed(cause: Exception) extends InvocationResult {
     override def toString = "exception: " + cause.getMessage
   }
-  final case object NoSuchOperation extends InvocationResult {
+  case object NoSuchOperation extends InvocationResult {
     override def toString = "no such operation"
   }
-  final case class NoOperationWithSignature(signature: Seq[Class[_]], validSignatures: Seq[String])
+  final case class NoOperationWithSignature(signature: Seq[Class[?]], validSignatures: Seq[String])
       extends InvocationResult {
     override def toString = "no operation with signature (%s) - valid signatures:%n  %s".format(
       signature.map(_.getSimpleName),

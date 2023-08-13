@@ -34,7 +34,7 @@ import scala.util.Try
 
 import sbt.io.Path
 import sbt.io.syntax._
-import sbt.internal.util.{FullReader, LineReader}
+import sbt.internal.util.{FullReader, LineReader, Terminal}
 import sbt.internal.util.complete.Parser
 
 import cjmx.cli.REPL
@@ -43,8 +43,8 @@ object App {
   private val historyFile = (Path.userHome / ".cjmx.history").asFile
 
   def run(args: Array[String]): Int = {
-    val consoleReader = new FullReader(Some(historyFile), _: Parser[_], true)
-    val reader: Parser[_] => LineReader = if (args.isEmpty) {
+    val consoleReader = new FullReader(Some(historyFile), _: Parser[?], true, Terminal.console)
+    val reader: Parser[?] => LineReader = if (args.isEmpty) {
       consoleReader
     } else {
       val firstArgAsConnect = Try(args.head.toInt).toOption.map(pid => "connect -q " + pid)
@@ -74,8 +74,8 @@ object App {
 
   private def prefixedReader(
       first: Array[String],
-      next: Parser[_] => LineReader
-  ): Parser[_] => LineReader = {
+      next: Parser[?] => LineReader
+  ): Parser[?] => LineReader = {
     val firstReader = constReader(first)
     p =>
       new LineReader {

@@ -211,7 +211,7 @@ class QueryExpParserTest extends AnyFunSuite with Matchers {
 
   validExamples.foreach { case (ex, query) =>
     test("valid - " + ex) {
-      parse(ex).right.map(_.toString) should be(Right(query.toString))
+      parse(ex).map(_.toString) should be(Right(query.toString))
     }
   }
 

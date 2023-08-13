@@ -30,7 +30,7 @@
 
 package cjmx.cli
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 import java.lang.management.ManagementFactory
 import javax.management._
@@ -86,7 +86,7 @@ class ProjectionParserTest extends AnyFunSuite with Matchers {
       val attrs =
         Seq(heapMemoryUsage(init = 0, committed = 1000000000, used = 500000000, max = 2000000000))
       val result = parse(ex)
-      val projected = result.right.get(attrs)
+      val projected = result.toOption.get(attrs)
       val projectedAsStrings = projected.flatMap { attr =>
         JAttribute(attr).toString.split("%n".format()).map(_.trim)
       }
@@ -113,7 +113,7 @@ class ProjectionParserTest extends AnyFunSuite with Matchers {
         "desc",
         Array("init", "committed", "used", "max"),
         Array("init", "committed", "used", "max"),
-        Array[OpenType[_]](SimpleType.LONG, SimpleType.LONG, SimpleType.LONG, SimpleType.LONG)
+        Array[OpenType[?]](SimpleType.LONG, SimpleType.LONG, SimpleType.LONG, SimpleType.LONG)
       ),
       Map(
         "init" -> 0L,

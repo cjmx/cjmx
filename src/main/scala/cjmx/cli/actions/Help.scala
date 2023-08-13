@@ -31,7 +31,7 @@
 package cjmx.cli
 package actions
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 import java.io.{BufferedReader, InputStreamReader}
 

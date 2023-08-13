@@ -43,7 +43,7 @@ import sbt.internal.util.complete.Parser
 import cjmx.util.jmx.Attach
 
 object REPL {
-  def run(reader: Parser[_] => LineReader, out: PrintStream): Int = {
+  def run(reader: Parser[?] => LineReader, out: PrintStream): Int = {
     @tailrec def runR(state: ActionContext): Int =
       state.runState match {
         case RunState.Running =>

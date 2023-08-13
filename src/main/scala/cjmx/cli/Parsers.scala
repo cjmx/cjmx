@@ -55,7 +55,7 @@ object Parsers {
     (token(
       "format "
     ) ~> (("text" ^^^ TextMessageFormatter) | "json" ^^^ JsonMessageFormatter.standard | "cjson" ^^^ JsonMessageFormatter.compact))
-      .map(actions.SetFormat)
+      .map(actions.SetFormat.apply)
 
   private lazy val Status: Parser[Action] =
     token("status") ^^^ actions.LastStatus
@@ -69,12 +69,12 @@ object Parsers {
   private def VMID(vms: Seq[JMX.VMID]): Parser[String] =
     token(Digit.+.string.examples(vms.map(_.value): _*))
 
-  private def JMXUsername(): Parser[String] = charClass(isScalaIDChar, "JMX username").*.string
+  private def JMXUsername: Parser[String] = charClass(isScalaIDChar, "JMX username").*.string
 
-  private def HostName(): Parser[String] =
+  private def HostName: Parser[String] =
     token(chars(('-' :: 'a'.to('z').toList ::: 0.to(9).toList).mkString("")).*.string, "hostname")
 
-  private def IpAddress(): Parser[String] =
+  private def IpAddress: Parser[String] =
     token(chars(('.' :: 0.to(9).toList).mkString("")).*.string, "ip address")
 
   private def RemoteConnectionAddress(): Parser[((String, Int), Option[String])] =

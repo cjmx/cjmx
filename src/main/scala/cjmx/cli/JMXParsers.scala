@@ -32,7 +32,7 @@ package cjmx
 package cli
 
 import scala.collection.immutable.Seq
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 import java.util.{Map => JMap}
 
@@ -442,7 +442,7 @@ object JMXParsers {
       ArrayP(StringValue)
   }.examples("<value>")
 
-  private def ArrayP[A: Manifest](p: Parser[A]): Parser[Array[A]] =
+  private def ArrayP[A: reflect.ClassTag](p: Parser[A]): Parser[Array[A]] =
     (token("{") ~> repsep(ws.* ~> p, ws.* ~> ',') <~ ws.* <~ token("}")).map(_.toArray)
 
   private def Identifier(quotes: Char*) =

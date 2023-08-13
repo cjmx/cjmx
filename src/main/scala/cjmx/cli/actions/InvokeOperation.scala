@@ -85,9 +85,9 @@ case class InvokeOperation(query: MBeanQuery, operationName: String, params: Seq
     )
   }
 
-  private def signatureTypes(op: MBeanOperationInfo): Option[List[Class[_]]] =
+  private def signatureTypes(op: MBeanOperationInfo): Option[List[Class[?]]] =
     op.getSignature.toList
-      .foldLeft(Option(Vector.empty[Class[_]])) { (acc, pi) =>
+      .foldLeft(Option(Vector.empty[Class[?]])) { (acc, pi) =>
         for {
           soFar <- acc
           t <- typeToClass(getClass.getClassLoader)(pi.getType)

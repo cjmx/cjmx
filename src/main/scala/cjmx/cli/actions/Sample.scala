@@ -64,6 +64,7 @@ case class Sample(query: Query, periodSeconds: Int, durationSeconds: Int) extend
       override def run = {
         queue.put(None)
         scheduler.shutdownNow()
+        ()
       }
     }
     scheduler.schedule(cancel, durationSeconds.toLong, TimeUnit.SECONDS)

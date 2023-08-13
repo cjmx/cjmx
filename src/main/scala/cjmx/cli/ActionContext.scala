@@ -34,13 +34,13 @@ import cjmx.util.jmx.JMXConnection
 
 sealed abstract class RunState
 object RunState {
-  final case object Running extends RunState
+  case object Running extends RunState
   final case class Exit(statusCode: Int) extends RunState
 }
 
 sealed abstract class ConnectionState
 object ConnectionState {
-  final case object Disconnected extends ConnectionState
+  case object Disconnected extends ConnectionState
   final case class Connected(connection: JMXConnection) extends ConnectionState
 }
 

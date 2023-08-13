@@ -51,10 +51,10 @@ class InvocationParserTest extends AnyFunSuite with Matchers {
   validExamples.foreach { case (ex, (expectedName, expectedArgs)) =>
     test("valid - " + ex) {
       val result = parse(ex)
-      result.right.map(_._1) should be(Right(expectedName))
-      result.right.map {
+      result.map(_._1) should be(Right(expectedName))
+      result.map {
         _._2.collect {
-          case a: Array[_] => a.toSeq
+          case a: Array[?] => a.toSeq
           case o           => o
         }
       } should be(Right(expectedArgs))
