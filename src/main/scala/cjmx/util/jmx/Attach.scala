@@ -3,7 +3,6 @@ package cjmx.util.jmx
 import scala.collection.JavaConverters._
 import scala.util.control.NonFatal
 
-import java.io.File
 import java.util.Hashtable
 import javax.management.remote._
 import com.sun.tools.attach._

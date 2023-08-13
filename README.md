@@ -20,9 +20,9 @@ To build, run `sbt publish-local`.  This will build `target/scala-2.12/proguard/
 Usage
 =====
 
-Launching cjmx is done via, using Java 8+:
+Launching cjmx is done via, using Java 9+:
 
-    java -cp $JAVA_HOME/lib/tools.jar:target/scala-2.12/proguard/cjmx_2.12-2.8.1-SNAPSHOT.jar cjmx.Main [PID]
+    java -cp target/scala-2.12/proguard/cjmx_2.12-2.8.1-SNAPSHOT.jar cjmx.Main [PID]
 
 If a PID is specified on the command line, cjmx will attempt to connect to the local JVM with that PID; otherwise, cjmx starts in a disconnected state.
 

@@ -31,7 +31,7 @@ case class Sample(query: Query, periodSeconds: Int, durationSeconds: Int) extend
         }
       }
     }
-    scheduler.scheduleWithFixedDelay(sample, 0, periodSeconds, TimeUnit.SECONDS)
+    scheduler.scheduleWithFixedDelay(sample, 0, periodSeconds.toLong, TimeUnit.SECONDS)
 
     val cancel = new Runnable {
       override def run = {
@@ -39,7 +39,7 @@ case class Sample(query: Query, periodSeconds: Int, durationSeconds: Int) extend
         scheduler.shutdownNow()
       }
     }
-    scheduler.schedule(cancel, durationSeconds, TimeUnit.SECONDS)
+    scheduler.schedule(cancel, durationSeconds.toLong, TimeUnit.SECONDS)
 
     val output: Iterator[String] = new Iterator[String] {
       private var end = false
