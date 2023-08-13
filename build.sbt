@@ -6,6 +6,7 @@ ThisBuild / developers ++= List(
   tlGitHubDev("mpilquist", "Michael Pilquist")
 )
 ThisBuild / tlSonatypeUseLegacyHost := true
+ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("17"))
 
 ThisBuild / scalaVersion := crossScalaVersions.value.last
 ThisBuild / crossScalaVersions := Seq("2.12.10")
